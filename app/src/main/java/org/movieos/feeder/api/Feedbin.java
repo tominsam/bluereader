@@ -14,6 +14,10 @@ import org.movieos.feeder.Settings;
 import org.movieos.feeder.sync.Subscription;
 
 import java.lang.reflect.Type;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -22,16 +26,21 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import okhttp3.Cache;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
+import timber.log.Timber;
 
 @SuppressWarnings("WeakerAccess")
 public class Feedbin {
@@ -63,8 +72,6 @@ public class Feedbin {
     }
 
     private static RawApi api(Context context, String credentials) {
-        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-        logging.setLevel(BuildConfig.DEBUG ? HttpLoggingInterceptor.Level.BODY : HttpLoggingInterceptor.Level.NONE);
 
         Gson gson = new GsonBuilder()
                 .setDateFormat(UTC_DATE_FORMAT)
@@ -79,7 +86,7 @@ public class Feedbin {
                             .build();
                     return chain.proceed(request);
                 })
-                .addInterceptor(logging)
+                .sslSocketFactory(dangerousSocketFactory())
                 .build();
 
         Retrofit sRetrofit = new Retrofit.Builder()
@@ -89,6 +96,37 @@ public class Feedbin {
                 .build();
 
         return sRetrofit.create(RawApi.class);
+    }
+
+    private static SSLSocketFactory dangerousSocketFactory() {
+        if (!BuildConfig.DEBUG) {
+            return null;
+        }
+        final TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    @Override
+                    public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                    }
+
+                    @Override
+                    public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                    }
+
+                    @Override
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[]{};
+                    }
+                }
+        };
+
+        try {
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            return sslContext.getSocketFactory();
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            Timber.e(e);
+        }
+        return null;
     }
 
     private interface RawApi {
