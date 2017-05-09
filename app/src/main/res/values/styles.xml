@@ -1,0 +1,30 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="toolbarStyle">@style/AppTheme.ActionBarStyle</item>
+        <item name="android:buttonStyle">@style/AppTheme.ButtonStyle</item>
+    </style>
+
+    <style name="AppTheme.ActionBarStyle" parent="Widget.AppCompat.Toolbar">
+        <item name="android:theme">@style/AppTheme.ActionBarTheme</item>
+        <item name="android:background">@color/primary</item>
+        <item name="android:elevation">8dp</item>
+    </style>
+
+    <style name="AppTheme.ActionBarTheme" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+    </style>
+
+    <style name="AppTheme.ButtonStyle" parent="Widget.AppCompat.Button.Colored">
+        <item name="android:background">@color/primary</item>
+    </style>
+
+    <style name="text_title" parent="@android:style/TextAppearance.Widget.TextView">
+        <item name="android:textSize">18sp</item>
+    </style>
+
+</resources>
