@@ -1,5 +1,7 @@
 package org.movieos.feeder;
 
+import android.webkit.WebView;
+
 import com.squareup.otto.Bus;
 
 import io.realm.Realm;
@@ -25,6 +27,8 @@ public class FeederApplication extends android.app.Application {
             .build();
 
         Realm.setDefaultConfiguration(config);
+
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
     }
 
     public static Bus getBus() {
