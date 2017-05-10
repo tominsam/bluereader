@@ -10,7 +10,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 
 import org.movieos.feeder.BuildConfig;
-import org.movieos.feeder.Settings;
+import org.movieos.feeder.utilities.Settings;
+import org.movieos.feeder.sync.Entry;
 import org.movieos.feeder.sync.Subscription;
 
 import java.lang.reflect.Type;
@@ -40,6 +41,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
+import retrofit2.http.Url;
 import timber.log.Timber;
 
 @SuppressWarnings("WeakerAccess")
@@ -58,8 +60,28 @@ public class Feedbin {
         mApi = api(context, Settings.getCredentials(context));
     }
 
-    public Call<List<Subscription>> subscriptions(Date since, int page) {
-        return mApi.subscriptions(formatDate(since), page);
+    public Call<List<Subscription>> subscriptions(Date since) {
+        return mApi.subscriptions(formatDate(since));
+    }
+
+    public Call<List<Subscription>> subscriptionsPaginate(String next) {
+        return mApi.subscriptionsPaginate(next);
+    }
+
+    public Call<List<Entry>> entries(Date since) {
+        return mApi.entries(formatDate(since), false);
+    }
+
+    public Call<List<Entry>> entriesPaginate(String url) {
+        return mApi.entriesPaginate(url);
+    }
+
+    public Call<List<Integer>> starred() {
+        return mApi.starred();
+    }
+
+    public Call<List<Integer>> unread() {
+        return mApi.unread();
     }
 
     private static String formatDate(Date date) {
@@ -134,7 +156,22 @@ public class Feedbin {
         Call<Void> authentication();
 
         @GET("subscriptions.json")
-        Call<List<Subscription>> subscriptions(@Query("since") String since, @Query("page") int page);
+        Call<List<Subscription>> subscriptions(@Query("since") String since);
+
+        @GET
+        Call<List<Subscription>> subscriptionsPaginate(@Url String url);
+
+        @GET("entries.json")
+        Call<List<Entry>> entries(@Query("since") String since, @Query("starred") boolean starred);
+
+        @GET
+        Call<List<Entry>> entriesPaginate(@Url String url);
+
+        @GET("starred_entries.json")
+        Call<List<Integer>> starred();
+
+        @GET("unread_entries.json")
+        Call<List<Integer>> unread();
     }
 
     private static class JavaDateDeserializer implements JsonDeserializer<Date> {

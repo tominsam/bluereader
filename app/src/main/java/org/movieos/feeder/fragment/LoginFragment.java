@@ -4,11 +4,12 @@ import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
-import okhttp3.Credentials;
 import org.movieos.feeder.R;
-import org.movieos.feeder.Settings;
 import org.movieos.feeder.api.Feedbin;
 import org.movieos.feeder.databinding.LoginFragmentBinding;
+import org.movieos.feeder.utilities.Settings;
+
+import okhttp3.Credentials;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -39,7 +40,7 @@ public class LoginFragment extends DataBindingFragment<LoginFragmentBinding> {
                         if (response.code() == 200) {
                             Settings.saveCredentials(getActivity(), credentials);
                             getFragmentManager().beginTransaction()
-                                .replace(R.id.main_content, new SyncFragment())
+                                .replace(R.id.main_content, new EntriesFragment())
                                 .commitNow();
 
                         } else {

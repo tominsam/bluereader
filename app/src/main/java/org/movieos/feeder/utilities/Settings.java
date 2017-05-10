@@ -1,4 +1,4 @@
-package org.movieos.feeder;
+package org.movieos.feeder.utilities;
 
 import android.content.Context;
 import android.content.SharedPreferences;

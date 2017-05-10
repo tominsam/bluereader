@@ -1,29 +1,43 @@
 package org.movieos.feeder.sync;
 
 import com.google.gson.annotations.SerializedName;
-import io.realm.RealmObject;
 
 import java.util.Date;
 
-public class Subscription extends RealmObject {
-    @SerializedName("id")
+import io.realm.RealmObject;
+import io.realm.annotations.Index;
+import io.realm.annotations.PrimaryKey;
+import io.realm.annotations.Required;
 
-    String mId;
+public class Subscription extends RealmObject implements IntegerPrimaryKey {
+    @SerializedName("id")
+    @PrimaryKey
+    int mId;
+
+    @Required
     @SerializedName("created_at")
     Date mCreatedAt;
+
+    @Index
     @SerializedName("feed_id")
-    String mFeedId;
+    int mFeedId;
+
+    @Required
     @SerializedName("title")
     String mTitle;
+
+    @Required
     @SerializedName("feed_url")
     String mFeedUrl;
+
+    @Required
     @SerializedName("site_url")
     String mSiteUtl;
 
     public Subscription() {
     }
 
-    public String getId() {
+    public int getId() {
         return mId;
     }
 
@@ -31,7 +45,7 @@ public class Subscription extends RealmObject {
         return mCreatedAt;
     }
 
-    public String getFeedId() {
+    public int getFeedId() {
         return mFeedId;
     }
 

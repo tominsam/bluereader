@@ -1,11 +1,13 @@
 package org.movieos.feeder;
 
+import com.squareup.otto.Bus;
+
 import io.realm.Realm;
-import okhttp3.CertificatePinner;
-import okhttp3.OkHttpClient;
+import io.realm.RealmConfiguration;
 import timber.log.Timber;
 
 public class FeederApplication extends android.app.Application {
+    static Bus sOtto = new Bus();
 
     @Override
     public void onCreate() {
@@ -16,6 +18,17 @@ public class FeederApplication extends android.app.Application {
         }
 
         Realm.init(this);
+
+        RealmConfiguration config = new RealmConfiguration.Builder()
+            .schemaVersion(3)
+            .deleteRealmIfMigrationNeeded()
+            .build();
+
+        Realm.setDefaultConfiguration(config);
+    }
+
+    public static Bus getBus() {
+        return sOtto;
     }
 
 }

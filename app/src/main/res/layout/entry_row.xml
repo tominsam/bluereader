@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    >
+
+    <data>
+
+        <variable
+            name="entry"
+            type="org.movieos.feeder.sync.Entry"
+            />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bottom_border"
+        android:foreground="?selectableItemBackground"
+        android:orientation="vertical"
+        android:padding="16dp"
+        >
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@{entry.title}"
+            android:textAppearance="@style/text_title"
+            android:textColor="@color/primary_text"
+            tools:text="Entry title"
+            app:bold="@{entry.unread}"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@{entry.subscription.title}"
+            android:textColor="@color/secondary_text"
+            tools:text="Entry author"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/secondary_text"
+            app:dateText="@{entry.published}"
+            tools:text="Entry published"
+            />
+
+    </LinearLayout>
+</layout>
