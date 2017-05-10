@@ -6,7 +6,7 @@
         android:id="@+id/menu_refresh"
         android:title="Refresh"
         app:showAsAction="ifRoom"
-        android:icon="@drawable/ic_refresh_black_24dp"
+        android:icon="@drawable/ic_refresh_24dp"
         />
 
 </menu>

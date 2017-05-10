@@ -1,10 +1,13 @@
 
 package org.movieos.feeder.sync;
 
+import android.support.annotation.UiThread;
+
 import com.google.gson.annotations.SerializedName;
 
 import java.util.Date;
 
+import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.annotations.Index;
 import io.realm.annotations.PrimaryKey;
@@ -87,8 +90,16 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
         return mUnread;
     }
 
+    public boolean isUnreadDirty() {
+        return mUnreadDirty;
+    }
+
     public boolean isStarred() {
         return mStarred;
+    }
+
+    public boolean isStarredDirty() {
+        return mStarredDirty;
     }
 
     public void setUnread(boolean unread, boolean dirty) {
@@ -108,4 +119,16 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
     public void setSubscription(Subscription subscription) {
         mSubscription = subscription;
     }
+
+    @UiThread
+    public static void setStarred(Entry entry, boolean starred) {
+        int id = entry.getId();
+        Realm realm = Realm.getDefaultInstance();
+        realm.executeTransactionAsync(r -> {
+            r.where(Entry.class).equalTo("mId", id).findFirst().setStarred(starred, true);
+        });
+        realm.close();
+    }
+
+
 }

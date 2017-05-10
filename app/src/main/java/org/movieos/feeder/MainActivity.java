@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
             mSnackbar = Snackbar.make(this.findViewById(R.id.main_content), status.getStatus(), Snackbar.LENGTH_INDEFINITE);
             mSnackbar.show();
         }
-        if (status.isComplete()) {
+        if (status.isComplete() && status.getException() != null) {
             mSnackbar.dismiss();
         }
     }

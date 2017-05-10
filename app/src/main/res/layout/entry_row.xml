@@ -13,28 +13,35 @@
             />
     </data>
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bottom_border"
         android:foreground="?selectableItemBackground"
         android:orientation="vertical"
-        android:padding="16dp"
         >
 
         <TextView
+            android:id="@+id/title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@{entry.title}"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:text="@{entry.title + (entry.starredDirty ? `dirty` : ``)}"
             android:textAppearance="@style/text_title"
             android:textColor="@color/primary_text"
-            tools:text="Entry title"
             app:bold="@{entry.unread}"
+            tools:text="Entry title"
             />
 
         <TextView
+            android:id="@+id/author"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_below="@+id/title"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:text="@{entry.subscription.title}"
             android:textColor="@color/secondary_text"
@@ -42,13 +49,33 @@
             />
 
         <TextView
+            android:id="@+id/date"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_below="@+id/author"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
+            android:layout_toStartOf="@+id/star"
             android:textColor="@color/secondary_text"
             app:dateText="@{entry.published}"
             tools:text="Entry published"
             />
 
-    </LinearLayout>
+        <ImageButton
+            android:id="@+id/star"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:background="?selectableItemBackgroundBorderless"
+            android:contentDescription="Save entry"
+            android:minHeight="48dp"
+            android:minWidth="48dp"
+            android:src="@drawable/ic_star_statelist"
+            app:selected="@{entry.isStarred}"
+            />
+
+    </RelativeLayout>
 </layout>

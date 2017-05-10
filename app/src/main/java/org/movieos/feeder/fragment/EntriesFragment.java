@@ -21,13 +21,14 @@ import io.realm.Sort;
 public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding> {
 
     RealmAdapter<Entry, EntryRowBinding> mAdapter;
+    private Realm mRealm;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         FeederApplication.getBus().register(this);
-        Realm realm = Realm.getDefaultInstance();
-        RealmResults<Entry> entries = realm.where(Entry.class).findAllSorted("mCreatedAt", Sort.DESCENDING);
+        mRealm = Realm.getDefaultInstance();
+        RealmResults<Entry> entries = mRealm.where(Entry.class).findAllSortedAsync("mCreatedAt", Sort.DESCENDING);
 
         mAdapter = new RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding.class, entries) {
             @Override
@@ -35,6 +36,11 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
                 holder.getBinding().setEntry(instance);
                 holder.itemView.setOnClickListener(v -> {
 
+                });
+                holder.getBinding().star.setOnClickListener(v -> {
+                    boolean newState = !v.isSelected();
+                    Entry.setStarred(instance, newState);
+                    v.setSelected(newState);
                 });
             }
         };
@@ -44,6 +50,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     public void onDestroy() {
         super.onDestroy();
         FeederApplication.getBus().unregister(this);
+        mRealm.close();
     }
 
 
