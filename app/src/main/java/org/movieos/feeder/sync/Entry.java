@@ -130,5 +130,15 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
         realm.close();
     }
 
+    @UiThread
+    public static void setUnread(Entry entry, boolean unread) {
+        int id = entry.getId();
+        Realm realm = Realm.getDefaultInstance();
+        realm.executeTransactionAsync(r -> {
+            r.where(Entry.class).equalTo("mId", id).findFirst().setUnread(unread, true);
+        });
+        realm.close();
+    }
+
 
 }

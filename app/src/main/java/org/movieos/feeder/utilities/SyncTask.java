@@ -38,6 +38,7 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
 
     @Override
     protected SyncStatus doInBackground(Void... params) {
+        Timber.i("Syncing..");
         Feedbin api = new Feedbin(mContext);
         Realm realm = Realm.getDefaultInstance();
         try {
@@ -49,6 +50,7 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
             getEntries(api, realm);
             getState(api, realm);
         } catch (Throwable e) {
+            Timber.e(e);
             return new SyncStatus(e);
         } finally {
             realm.close();
@@ -86,7 +88,6 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
             api.addStarred(add).execute();
             api.removeStarred(remove).execute();
         }
-        realm.close();
     }
 
     private void getSubscriptions(Feedbin api, Realm realm) throws IOException {
@@ -183,7 +184,7 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
         public SyncStatus(Throwable exception) {
             mComplete = true;
             mException = exception;
-            mStatus = exception.getLocalizedMessage();
+            mStatus = exception.getMessage();
         }
 
         public boolean isComplete() {

@@ -35,7 +35,11 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
             public void onBindViewHolder(FeedViewHolder<EntryRowBinding> holder, Entry instance) {
                 holder.getBinding().setEntry(instance);
                 holder.itemView.setOnClickListener(v -> {
-
+                    getFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.main_content, DetailFragment.create(holder.getAdapterPosition()))
+                        .addToBackStack(null)
+                        .commit();
                 });
                 holder.getBinding().star.setOnClickListener(v -> {
                     boolean newState = !v.isSelected();
