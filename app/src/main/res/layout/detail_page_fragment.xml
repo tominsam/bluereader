@@ -8,7 +8,7 @@
     <data>
         <variable
             name="entry"
-            type="org.movieos.feeder.sync.Entry"
+            type="org.movieos.feeder.model.Entry"
             />
     </data>
 

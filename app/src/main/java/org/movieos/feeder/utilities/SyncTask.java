@@ -6,8 +6,8 @@ import android.os.AsyncTask;
 import org.movieos.feeder.FeederApplication;
 import org.movieos.feeder.api.Feedbin;
 import org.movieos.feeder.api.PageLinks;
-import org.movieos.feeder.sync.Entry;
-import org.movieos.feeder.sync.Subscription;
+import org.movieos.feeder.model.Entry;
+import org.movieos.feeder.model.Subscription;
 
 import java.io.IOException;
 import java.util.Date;

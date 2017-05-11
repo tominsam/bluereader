@@ -12,8 +12,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
 import org.movieos.feeder.BuildConfig;
-import org.movieos.feeder.sync.Entry;
-import org.movieos.feeder.sync.Subscription;
+import org.movieos.feeder.model.Entry;
+import org.movieos.feeder.model.Subscription;
 import org.movieos.feeder.utilities.Settings;
 
 import java.lang.reflect.Type;

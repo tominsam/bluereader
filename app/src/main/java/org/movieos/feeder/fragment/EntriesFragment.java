@@ -10,7 +10,7 @@ import org.movieos.feeder.FeederApplication;
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.EntriesFragmentBinding;
 import org.movieos.feeder.databinding.EntryRowBinding;
-import org.movieos.feeder.sync.Entry;
+import org.movieos.feeder.model.Entry;
 import org.movieos.feeder.utilities.RealmAdapter;
 import org.movieos.feeder.utilities.SyncTask;
 

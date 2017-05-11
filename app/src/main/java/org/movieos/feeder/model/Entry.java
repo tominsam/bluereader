@@ -1,5 +1,5 @@
 
-package org.movieos.feeder.sync;
+package org.movieos.feeder.model;
 
 import android.support.annotation.UiThread;
 

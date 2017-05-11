@@ -1,4 +1,4 @@
-package org.movieos.feeder.sync;
+package org.movieos.feeder.model;
 
 import com.google.gson.annotations.SerializedName;
 

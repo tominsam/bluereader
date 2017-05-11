@@ -9,7 +9,7 @@ import android.webkit.WebChromeClient;
 
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.DetailPageFragmentBinding;
-import org.movieos.feeder.sync.Entry;
+import org.movieos.feeder.model.Entry;
 
 import java.io.BufferedReader;
 import java.io.InputStream;

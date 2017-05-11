@@ -12,7 +12,7 @@ import android.view.ViewGroup;
 import org.movieos.feeder.FeederApplication;
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.DetailFragmentBinding;
-import org.movieos.feeder.sync.Entry;
+import org.movieos.feeder.model.Entry;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
