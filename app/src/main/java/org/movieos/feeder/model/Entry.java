@@ -9,10 +9,11 @@ import java.util.Date;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
+import io.realm.Sort;
 import io.realm.annotations.Index;
 import io.realm.annotations.PrimaryKey;
 import io.realm.annotations.Required;
-import timber.log.Timber;
 
 public class Entry extends RealmObject implements IntegerPrimaryKey {
     @PrimaryKey
@@ -45,6 +46,24 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
     boolean mStarred;
 
     Subscription mSubscription;
+
+    public enum ViewType {
+        UNREAD,
+        STARRED,
+        ALL,
+    }
+
+    public static RealmResults<Entry> entries(Realm realm, ViewType viewType) {
+        switch (viewType) {
+            case UNREAD:
+                return realm.where(Entry.class).equalTo("mUnread", true).findAllSorted("mPublished", Sort.ASCENDING);
+            case STARRED:
+                return realm.where(Entry.class).equalTo("mStarred", true).findAllSorted("mPublished", Sort.ASCENDING);
+            case ALL:
+                return realm.where(Entry.class).findAllSorted("mCreatedAt", Sort.ASCENDING);
+        }
+        throw new AssertionError("bad view type");
+    }
 
     public Entry() {
     }
@@ -104,11 +123,9 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
     public boolean isLocallyStarred() {
         Realm realm = Realm.getDefaultInstance();
         boolean starred = mStarred;
-        Timber.i("local state for %d is %s", mId, starred ? "starred" : "not starred");
         for (LocalState local : LocalState.forEntry(realm, this)) {
             if (local.getMarkStarred() != null) {
                 starred = local.getMarkStarred();
-                Timber.i("..overridden as %s", starred ? "starred" : "not starred");
             }
         }
         realm.close();

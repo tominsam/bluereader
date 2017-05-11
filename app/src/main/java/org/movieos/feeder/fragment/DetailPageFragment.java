@@ -3,9 +3,14 @@ package org.movieos.feeder.fragment;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.customtabs.CustomTabsIntent;
+import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.DetailPageFragmentBinding;
@@ -41,11 +46,23 @@ public class DetailPageFragment extends DataBindingFragment<DetailPageFragmentBi
         // Needed for youtube embeds to work
         binding.webView.getSettings().setJavaScriptEnabled(true);
         binding.webView.setWebChromeClient(new WebChromeClient() {});
+        binding.webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+                builder.setToolbarColor(ContextCompat.getColor(getActivity(), R.color.primary));
+                builder.addDefaultShareMenuItem();
+                CustomTabsIntent customTabsIntent = builder.build();
+                customTabsIntent.launchUrl(getActivity(), request.getUrl());
+                return true;
+            }
+        });
 
         binding.webView.loadDataWithBaseURL(null,
             getTemplate()
                 .replace("{{body}}", getEntry().getContent())
                 .replace("{{title}}", getEntry().getTitle())
+                .replace("{{link}}", getEntry().getUrl())
             , "text/html", "utf-8", "");
         return binding;
     }

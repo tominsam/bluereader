@@ -1,6 +1,7 @@
 package org.movieos.feeder.api;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -73,7 +74,7 @@ public class Feedbin {
     }
 
     public Call<List<Entry>> entries(Date since) {
-        return mApi.entries(formatDate(since), false);
+        return mApi.entries(formatDate(since));
     }
 
     public Call<List<Entry>> entriesPaginate(String url) {
@@ -128,6 +129,9 @@ public class Feedbin {
         return mApi.removeUnread(base);
     }
 
+    public Call<List<Entry>> entries(List<Integer> ids) {
+        return mApi.entriesById(TextUtils.join(",", ids));
+    }
 
 
     private static String formatDate(Date date) {
@@ -208,7 +212,7 @@ public class Feedbin {
         Call<List<Subscription>> subscriptionsPaginate(@Url String url);
 
         @GET("entries.json")
-        Call<List<Entry>> entries(@Query("since") String since, @Query("starred") boolean starred);
+        Call<List<Entry>> entries(@Query("since") String since);
 
         @GET
         Call<List<Entry>> entriesPaginate(@Url String url);
@@ -230,6 +234,9 @@ public class Feedbin {
 
         @POST("unread_entries/delete.json")
         Call<Void> removeUnread(@Body JsonObject json);
+
+        @GET("entries.json")
+        Call<List<Entry>> entriesById(@Query("ids") String ids);
     }
 
     private static class JavaDateDeserializer implements JsonDeserializer<Date> {

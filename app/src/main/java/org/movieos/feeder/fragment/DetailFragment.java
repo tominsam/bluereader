@@ -14,22 +14,26 @@ import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.DetailFragmentBinding;
 import org.movieos.feeder.model.Entry;
 
+import io.realm.OrderedCollectionChangeSet;
+import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.Realm;
 import io.realm.RealmResults;
-import io.realm.Sort;
 import timber.log.Timber;
 
-public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> {
+public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> implements OrderedRealmCollectionChangeListener<RealmResults<Entry>> {
 
     private static final String INDEX = "index";
+    private static final String VIEW_TYPE = "view_type";
+
     FragmentStatePagerAdapter mAdapter;
     private Realm mRealm;
     private RealmResults<Entry> mEntries;
 
-    public static DetailFragment create(int index) {
+    public static DetailFragment create(int index, Entry.ViewType viewType) {
         DetailFragment fragment = new DetailFragment();
         fragment.setArguments(new Bundle());
         fragment.getArguments().putInt(INDEX, index);
+        fragment.getArguments().putSerializable(VIEW_TYPE, viewType);
         return fragment;
     }
 
@@ -51,16 +55,21 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> {
         };
 
         mRealm = Realm.getDefaultInstance();
-        mEntries = mRealm.where(Entry.class).findAllSorted("mCreatedAt", Sort.DESCENDING);
-        mEntries.addChangeListener((collection, changeSet) -> mAdapter.notifyDataSetChanged());
+        mEntries = Entry.entries(mRealm, (Entry.ViewType) getArguments().getSerializable(VIEW_TYPE));
+        mEntries.addChangeListener(this);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         FeederApplication.getBus().unregister(this);
-        mEntries.removeAllChangeListeners();
+        mEntries.removeChangeListener(this);
         mRealm.close();
+    }
+
+    @Override
+    public void onChange(RealmResults<Entry> collection, OrderedCollectionChangeSet changeSet) {
+        mAdapter.notifyDataSetChanged();
     }
 
     @NonNull

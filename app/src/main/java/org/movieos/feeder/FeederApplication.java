@@ -22,7 +22,7 @@ public class FeederApplication extends android.app.Application {
         Realm.init(this);
 
         RealmConfiguration config = new RealmConfiguration.Builder()
-            .schemaVersion(3)
+            .schemaVersion(6)
             .deleteRealmIfMigrationNeeded()
             .build();
 

@@ -2,8 +2,17 @@
 <layout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     >
+
+    <data>
+
+        <variable
+            name="viewType"
+            type="org.movieos.feeder.model.Entry.ViewType"
+            />
+
+        <import type="org.movieos.feeder.model.Entry.ViewType"/>
+    </data>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -25,6 +34,62 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/primary"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:theme="@style/AppTheme.ActionBarTheme"
+            >
+
+            <ImageButton
+                android:id="@+id/state_starred"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="16dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:contentDescription="View starred entries"
+                android:minHeight="48dp"
+                android:minWidth="48dp"
+                android:src="@drawable/selectable_starred"
+                android:tint="@color/view_state_statelist"
+                app:selected="@{viewType == ViewType.STARRED}"
+                />
+
+            <ImageButton
+                android:id="@+id/state_unread"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="16dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:contentDescription="View unread entries"
+                android:minHeight="48dp"
+                android:minWidth="48dp"
+                android:src="@drawable/selectable_unread"
+                android:tint="@color/view_state_statelist"
+                app:selected="@{viewType == ViewType.UNREAD}"
+                />
+
+            <ImageButton
+                android:id="@+id/state_all"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_marginStart="16dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:contentDescription="View all entries"
+                android:minHeight="48dp"
+                android:minWidth="48dp"
+                android:src="@drawable/selectable_all"
+                android:tint="@color/view_state_statelist"
+                app:selected="@{viewType == ViewType.ALL}"
+                />
+
+        </LinearLayout>
 
 
     </LinearLayout>

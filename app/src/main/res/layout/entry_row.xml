@@ -73,7 +73,8 @@
             android:contentDescription="Save entry"
             android:minHeight="48dp"
             android:minWidth="48dp"
-            android:src="@drawable/ic_star_statelist"
+            android:src="@drawable/selectable_starred"
+            android:tint="@color/star_statelist"
             app:selected="@{entry.isLocallyStarred}"
             />
 

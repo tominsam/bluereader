@@ -11,11 +11,13 @@ import org.movieos.feeder.model.IntegerPrimaryKey;
 
 import java.lang.reflect.InvocationTargetException;
 
+import io.realm.OrderedCollectionChangeSet;
+import io.realm.OrderedRealmCollectionChangeListener;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
 
 
-public abstract class RealmAdapter<T extends RealmObject & IntegerPrimaryKey, B extends ViewDataBinding> extends RecyclerView.Adapter<RealmAdapter.FeedViewHolder<B>> {
+public abstract class RealmAdapter<T extends RealmObject & IntegerPrimaryKey, B extends ViewDataBinding> extends RecyclerView.Adapter<RealmAdapter.FeedViewHolder<B>> implements OrderedRealmCollectionChangeListener<RealmResults<T>> {
 
     Class<B> mKlass;
     RealmResults<T> mQuery;
@@ -23,16 +25,37 @@ public abstract class RealmAdapter<T extends RealmObject & IntegerPrimaryKey, B 
     public RealmAdapter(Class<B> klass, RealmResults<T> query) {
         mKlass = klass;
         mQuery = query;
-        mQuery.addChangeListener((collection, changeSet) -> notifyDataSetChanged());
         setHasStableIds(true);
     }
 
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
         super.onAttachedToRecyclerView(recyclerView);
+        mQuery.addChangeListener(this);
         if (recyclerView.getLayoutManager() == null) {
             recyclerView.setLayoutManager(new LinearLayoutManager(recyclerView.getContext()));
         }
+    }
+
+    public void setQuery(RealmResults<T> query) {
+        if (mQuery != null) {
+            mQuery.removeChangeListener(this);
+            mQuery.removeChangeListener(this);
+        }
+        mQuery = query;
+        mQuery.addChangeListener(this);
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        mQuery.removeChangeListener(this);
+    }
+
+    @Override
+    public void onChange(RealmResults<T> collection, OrderedCollectionChangeSet changeSet) {
+        notifyDataSetChanged();
     }
 
     @Override

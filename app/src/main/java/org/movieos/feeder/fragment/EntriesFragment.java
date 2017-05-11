@@ -17,9 +17,10 @@ import org.movieos.feeder.utilities.SyncTask;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
-import io.realm.Sort;
 
 public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding> {
+
+    private static final String VIEW_TYPE = "view_type";
 
     RealmAdapter<Entry, EntryRowBinding> mAdapter;
     int mCurrentEntry = -1;
@@ -27,19 +28,29 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     private int mFirstBeforePause;
     private int mLastBeforePause;
 
+    @NonNull
+    Entry.ViewType mViewType = Entry.ViewType.UNREAD;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         FeederApplication.getBus().register(this);
         mRealm = Realm.getDefaultInstance();
-        RealmResults<Entry> entries = mRealm.where(Entry.class).findAllSorted("mCreatedAt", Sort.DESCENDING);
+        if (savedInstanceState != null) {
+            mViewType = (Entry.ViewType) savedInstanceState.getSerializable(VIEW_TYPE);
+            if (mViewType == null) {
+                throw new AssertionError("null viewtype in saved instancestate");
+            }
+        }
+
+        RealmResults<Entry> entries = Entry.entries(mRealm, mViewType);
 
         mAdapter = new RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding.class, entries) {
             @Override
             public void onBindViewHolder(FeedViewHolder<EntryRowBinding> holder, Entry instance) {
                 holder.getBinding().setEntry(instance);
                 holder.itemView.setOnClickListener(v -> {
-                    DetailFragment fragment = DetailFragment.create(holder.getAdapterPosition());
+                    DetailFragment fragment = DetailFragment.create(holder.getAdapterPosition(), mViewType);
                     fragment.setTargetFragment(EntriesFragment.this, 0);
                     getFragmentManager()
                         .beginTransaction()
@@ -57,6 +68,12 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     }
 
     @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable(VIEW_TYPE, mViewType);
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
         FeederApplication.getBus().unregister(this);
@@ -68,6 +85,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     @Override
     protected EntriesFragmentBinding createBinding(final LayoutInflater inflater, final ViewGroup container) {
         EntriesFragmentBinding binding = EntriesFragmentBinding.inflate(inflater, container, false);
+        binding.setViewType(mViewType);
         binding.recyclerView.setAdapter(mAdapter);
         binding.toolbar.inflateMenu(R.menu.entries_menu);
         binding.toolbar.setOnMenuItemClickListener(item -> {
@@ -79,6 +97,11 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
                     return false;
             }
         });
+
+        binding.stateUnread.setOnClickListener(v -> setViewType(Entry.ViewType.UNREAD));
+        binding.stateStarred.setOnClickListener(v -> setViewType(Entry.ViewType.STARRED));
+        binding.stateAll.setOnClickListener(v -> setViewType(Entry.ViewType.ALL));
+
         return binding;
     }
 
@@ -116,6 +139,15 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
             mCurrentEntry = position;
         }
     }
+
+    private void setViewType(@NonNull Entry.ViewType viewType) {
+        mViewType = viewType;
+        if (mBinding != null) {
+            mBinding.setViewType(mViewType);
+        }
+        mAdapter.setQuery(Entry.entries(mRealm, mViewType));
+    }
+
 
 
 }

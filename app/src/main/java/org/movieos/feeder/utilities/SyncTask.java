@@ -11,6 +11,7 @@ import org.movieos.feeder.model.LocalState;
 import org.movieos.feeder.model.Subscription;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,9 @@ import timber.log.Timber;
 public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
 
     public static final Executor SYNC_EXECUTOR = Executors.newSingleThreadExecutor();
+
+    private static final int CATCHUP_SIZE = 10;
+    private static final int MAX_ENTRIES_COUNT = 1000;
 
     Context mContext;
 
@@ -160,17 +164,16 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
         publishProgress("Syncing entries");
         Entry latestEntry = realm.where(Entry.class).findAllSorted("mCreatedAt", Sort.DESCENDING).first(null);
         Date entriesSince = latestEntry == null ? null : latestEntry.getCreatedAt();
+        if (Entry.entries(realm, Entry.ViewType.ALL).size() < MAX_ENTRIES_COUNT) {
+            // ignore the incremental sync stuff until we have at least
+            // this many entries - this fixes the problem if the first sync
+            // fails.
+            entriesSince = null;
+        }
         Response<List<Entry>> entries = api.entries(entriesSince).execute();
         while (true) {
             Response<List<Entry>> finalResponse = entries;
-            for (Entry entry : finalResponse.body()) {
-                // Connect entries to their subscriptions
-                entry.setSubscription(realm.where(Subscription.class).equalTo("mFeedId", entry.getFeedId()).findFirst());
-                // Create entries with the right read/unread state
-                entry.setStarredFromServer(starred.contains(entry.getId()));
-                entry.setUnreadFromServer(unread.contains(entry.getId()));
-            }
-            realm.executeTransaction(r -> r.copyToRealmOrUpdate(finalResponse.body()));
+            insertEntries(realm, unread, starred, finalResponse);
             PageLinks links = new PageLinks(entries.raw());
             if (links.getNext() == null) {
                 break;
@@ -178,7 +181,7 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
             entryCount += entries.body().size();
             publishProgress(String.format(Locale.getDefault(), "Syncing entries (%d)", entryCount));
             entries = api.entriesPaginate(links.getNext()).execute();
-            if (entryCount >= 300) {
+            if (entryCount >= MAX_ENTRIES_COUNT) {
                 // TODO handle better
                 break;
             }
@@ -193,6 +196,36 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
                 entry.setStarredFromServer(starred.contains(entry.getId()));
             }
         });
+
+        List<Integer> missing = new ArrayList<>();
+        for (Integer integer : unread) {
+            if (realm.where(Entry.class).equalTo("mId", integer).findAll().size() == 0) {
+                missing.add(integer);
+            }
+        }
+        for (Integer integer : starred) {
+            if (realm.where(Entry.class).equalTo("mId", integer).findAll().size() == 0) {
+                missing.add(integer);
+            }
+        }
+        while (!missing.isEmpty()) {
+            List<Integer> page = ListUtils.slice(0, CATCHUP_SIZE, missing);
+            missing = ListUtils.slice(CATCHUP_SIZE, missing.size(), missing);
+            Response<List<Entry>> missingEntries = api.entries(page).execute();
+            insertEntries(realm, unread, starred, missingEntries);
+        }
+
+    }
+
+    private void insertEntries(Realm realm, List<Integer> unread, List<Integer> starred, Response<List<Entry>> finalResponse) {
+        for (Entry entry : finalResponse.body()) {
+            // Connect entries to their subscriptions
+            entry.setSubscription(realm.where(Subscription.class).equalTo("mFeedId", entry.getFeedId()).findFirst());
+            // Create entries with the right read/unread state
+            entry.setStarredFromServer(starred.contains(entry.getId()));
+            entry.setUnreadFromServer(unread.contains(entry.getId()));
+        }
+        realm.executeTransaction(r -> r.copyToRealmOrUpdate(finalResponse.body()));
     }
 
     public static class SyncStatus {
