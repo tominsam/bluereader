@@ -126,7 +126,6 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
             api.removeUnread(removeUnread).execute();
         }
 
-
         if (localStates.isEmpty()) {
             return null;
         } else {

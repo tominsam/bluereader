@@ -58,9 +58,9 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
             case UNREAD:
                 return realm.where(Entry.class).equalTo("mUnread", true).findAllSorted("mPublished", Sort.ASCENDING);
             case STARRED:
-                return realm.where(Entry.class).equalTo("mStarred", true).findAllSorted("mPublished", Sort.ASCENDING);
+                return realm.where(Entry.class).equalTo("mStarred", true).findAllSorted("mPublished", Sort.DESCENDING);
             case ALL:
-                return realm.where(Entry.class).findAllSorted("mCreatedAt", Sort.ASCENDING);
+                return realm.where(Entry.class).findAllSorted("mCreatedAt", Sort.DESCENDING);
         }
         throw new AssertionError("bad view type");
     }
