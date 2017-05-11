@@ -7,7 +7,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
-import org.movieos.feeder.FeederApplication;
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.EntriesFragmentBinding;
 import org.movieos.feeder.databinding.EntryRowBinding;
@@ -34,7 +33,6 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        FeederApplication.getBus().register(this);
         mRealm = Realm.getDefaultInstance();
         if (savedInstanceState != null) {
             mViewType = (Entry.ViewType) savedInstanceState.getSerializable(VIEW_TYPE);
@@ -76,7 +74,6 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     @Override
     public void onDestroy() {
         super.onDestroy();
-        FeederApplication.getBus().unregister(this);
         mRealm.close();
     }
 

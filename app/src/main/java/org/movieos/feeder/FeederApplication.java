@@ -2,14 +2,14 @@ package org.movieos.feeder;
 
 import android.webkit.WebView;
 
-import com.squareup.otto.Bus;
+import org.greenrobot.eventbus.EventBus;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import timber.log.Timber;
 
 public class FeederApplication extends android.app.Application {
-    static Bus sOtto = new Bus();
+    static EventBus sEventBus = new EventBus();
 
     @Override
     public void onCreate() {
@@ -31,8 +31,8 @@ public class FeederApplication extends android.app.Application {
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
     }
 
-    public static Bus getBus() {
-        return sOtto;
+    public static EventBus getBus() {
+        return sEventBus;
     }
 
 }

@@ -6,8 +6,8 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.webkit.WebView;
 
-import com.squareup.otto.Subscribe;
-
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 import org.movieos.feeder.fragment.EntriesFragment;
 import org.movieos.feeder.fragment.LoginFragment;
 import org.movieos.feeder.utilities.FragmentBackHandler;
@@ -69,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressWarnings("unused")
-    @Subscribe
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void syncStatus(SyncTask.SyncStatus status) {
         if (mSnackbar != null) {
             mSnackbar.setText(status.getStatus());

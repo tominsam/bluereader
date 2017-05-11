@@ -9,7 +9,6 @@ import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
-import org.movieos.feeder.FeederApplication;
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.DetailFragmentBinding;
 import org.movieos.feeder.model.Entry;
@@ -40,7 +39,6 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        FeederApplication.getBus().register(this);
 
         mAdapter = new FragmentStatePagerAdapter(getChildFragmentManager()) {
             @Override
@@ -62,7 +60,6 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
     @Override
     public void onDestroy() {
         super.onDestroy();
-        FeederApplication.getBus().unregister(this);
         mEntries.removeChangeListener(this);
         mRealm.close();
     }
