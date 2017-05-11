@@ -9,6 +9,7 @@ import org.movieos.feeder.api.PageLinks;
 import org.movieos.feeder.model.Entry;
 import org.movieos.feeder.model.LocalState;
 import org.movieos.feeder.model.Subscription;
+import org.movieos.feeder.model.Tagging;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,17 +46,16 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
 
     @Override
     protected SyncStatus doInBackground(Void... params) {
-        Timber.i("Syncing..");
+        onProgressUpdate("Syncing...");
         Feedbin api = new Feedbin(mContext);
         Realm realm = Realm.getDefaultInstance();
         try {
-            // TODO first sync - the entries are returned in reverse order, so we need
-            // to only mark the sync as complete once we have fetched enough, or we can
-            // never paginate back there again
-
+            // Push state. We store the date we pushed up until.
             Date state = pushState(api, realm);
 
+            // Pull server state
             getSubscriptions(api, realm);
+            getTaggings(api, realm);
             getEntries(api, realm);
 
             // remove local state after we've pulled server state, so stars don't blink
@@ -78,7 +78,6 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
     @Override
     protected void onProgressUpdate(String... values) {
         for (String value : values) {
-            Timber.i(value);
             FeederApplication.getBus().post(new SyncStatus(false, value));
         }
     }
@@ -134,22 +133,17 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
     }
 
     private void getSubscriptions(Feedbin api, Realm realm) throws IOException {
-        int subscriptionCount = 0;
         publishProgress("Syncing subscriptions");
         Subscription latestSubscription = realm.where(Subscription.class).findAllSorted("mCreatedAt", Sort.DESCENDING).first(null);
         Date subscriptionsSince = latestSubscription == null ? null : latestSubscription.getCreatedAt();
         Response<List<Subscription>> subscriptions = api.subscriptions(subscriptionsSince).execute();
-        while (true) {
-            Response<List<Subscription>> finalResponse = subscriptions;
-            realm.executeTransaction(r -> r.copyToRealmOrUpdate(finalResponse.body()));
-            PageLinks links = new PageLinks(subscriptions.raw());
-            if (links.getNext() == null) {
-                break;
-            }
-            subscriptionCount += subscriptions.body().size();
-            publishProgress(String.format(Locale.getDefault(), "Syncing subscriptions (%d)", subscriptionCount));
-            subscriptions = api.subscriptionsPaginate(links.getNext()).execute();
-        }
+        realm.executeTransaction(r -> r.copyToRealmOrUpdate(subscriptions.body()));
+    }
+
+    private void getTaggings(Feedbin api, Realm realm) throws IOException {
+        publishProgress("Syncing tags");
+        Response<List<Tagging>> taggings = api.taggings().execute();
+        realm.executeTransaction(r -> r.copyToRealmOrUpdate(taggings.body()));
     }
 
     private void getEntries(Feedbin api, Realm realm) throws IOException {
@@ -196,6 +190,8 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
             }
         });
 
+        // Finally, if there's anything in the unread or starred lists we haven't seen,
+        // fetch those explicitly.
         List<Integer> missing = new ArrayList<>();
         for (Integer integer : unread) {
             if (realm.where(Entry.class).equalTo("mId", integer).findAll().size() == 0) {
@@ -208,6 +204,7 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
             }
         }
         while (!missing.isEmpty()) {
+            publishProgress("Backfilling " + missing.size() + " entries");
             List<Integer> page = ListUtils.slice(0, CATCHUP_SIZE, missing);
             missing = ListUtils.slice(CATCHUP_SIZE, missing.size(), missing);
             Response<List<Entry>> missingEntries = api.entries(page).execute();

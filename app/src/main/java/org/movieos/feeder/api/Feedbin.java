@@ -15,6 +15,7 @@ import com.google.gson.JsonParseException;
 import org.movieos.feeder.BuildConfig;
 import org.movieos.feeder.model.Entry;
 import org.movieos.feeder.model.Subscription;
+import org.movieos.feeder.model.Tagging;
 import org.movieos.feeder.utilities.Settings;
 
 import java.lang.reflect.Type;
@@ -87,6 +88,10 @@ public class Feedbin {
 
     public Call<List<Integer>> unread() {
         return mApi.unread();
+    }
+
+    public Call<List<Tagging>> taggings() {
+        return mApi.taggings();
     }
 
     public Call<Void> addStarred(Iterable<Integer> ids) {
@@ -237,6 +242,9 @@ public class Feedbin {
 
         @GET("entries.json")
         Call<List<Entry>> entriesById(@Query("ids") String ids);
+
+        @GET("taggings.json")
+        Call<List<Tagging>> taggings();
     }
 
     private static class JavaDateDeserializer implements JsonDeserializer<Date> {
