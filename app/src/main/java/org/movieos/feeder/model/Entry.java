@@ -12,6 +12,7 @@ import io.realm.RealmObject;
 import io.realm.annotations.Index;
 import io.realm.annotations.PrimaryKey;
 import io.realm.annotations.Required;
+import timber.log.Timber;
 
 public class Entry extends RealmObject implements IntegerPrimaryKey {
     @PrimaryKey
@@ -41,9 +42,7 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
     Date mPublished;
 
     boolean mUnread;
-    boolean mUnreadDirty;
     boolean mStarred;
-    boolean mStarredDirty;
 
     Subscription mSubscription;
 
@@ -86,30 +85,12 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
         return mPublished;
     }
 
-    public boolean isUnread() {
-        return mUnread;
-    }
-
-    public boolean isUnreadDirty() {
-        return mUnreadDirty;
-    }
-
-    public boolean isStarred() {
-        return mStarred;
-    }
-
-    public boolean isStarredDirty() {
-        return mStarredDirty;
-    }
-
-    public void setUnread(boolean unread, boolean dirty) {
+    public void setUnreadFromServer(boolean unread) {
         mUnread = unread;
-        mUnreadDirty = dirty;
     }
 
-    public void setStarred(boolean starred, boolean dirty) {
+    public void setStarredFromServer(boolean starred) {
         mStarred = starred;
-        mStarredDirty = dirty;
     }
 
     public Subscription getSubscription() {
@@ -120,24 +101,45 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
         mSubscription = subscription;
     }
 
-    @UiThread
-    public static void setStarred(Entry entry, boolean starred) {
-        int id = entry.getId();
+    public boolean isLocallyStarred() {
         Realm realm = Realm.getDefaultInstance();
-        realm.executeTransactionAsync(r -> {
-            r.where(Entry.class).equalTo("mId", id).findFirst().setStarred(starred, true);
-        });
+        boolean starred = mStarred;
+        Timber.i("local state for %d is %s", mId, starred ? "starred" : "not starred");
+        for (LocalState local : LocalState.forEntry(realm, this)) {
+            if (local.getMarkStarred() != null) {
+                starred = local.getMarkStarred();
+                Timber.i("..overridden as %s", starred ? "starred" : "not starred");
+            }
+        }
         realm.close();
+        return starred;
+    }
+
+    public boolean isLocallyUnread() {
+        Realm realm = Realm.getDefaultInstance();
+        boolean unread = mUnread;
+        for (LocalState local : LocalState.forEntry(realm, this)) {
+            if (local.getMarkUnread() != null) {
+                unread = local.getMarkUnread();
+            }
+        }
+        realm.close();
+        return unread;
+    }
+
+
+    @UiThread
+    public static void setStarred(Realm realm, int entryId, boolean starred) {
+        realm.executeTransactionAsync(r -> {
+            r.copyToRealm(new LocalState(entryId, null, starred));
+        });
     }
 
     @UiThread
-    public static void setUnread(Entry entry, boolean unread) {
-        int id = entry.getId();
-        Realm realm = Realm.getDefaultInstance();
+    public static void setUnread(Realm realm, int entryId, boolean unread) {
         realm.executeTransactionAsync(r -> {
-            r.where(Entry.class).equalTo("mId", id).findFirst().setUnread(unread, true);
+            r.copyToRealm(new LocalState(entryId, unread, null));
         });
-        realm.close();
     }
 
 

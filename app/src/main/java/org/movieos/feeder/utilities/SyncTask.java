@@ -7,12 +7,15 @@ import org.movieos.feeder.FeederApplication;
 import org.movieos.feeder.api.Feedbin;
 import org.movieos.feeder.api.PageLinks;
 import org.movieos.feeder.model.Entry;
+import org.movieos.feeder.model.LocalState;
 import org.movieos.feeder.model.Subscription;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -45,10 +48,20 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
             // TODO first sync - the entries are returned in reverse order, so we need
             // to only mark the sync as complete once we have fetched enough, or we can
             // never paginate back there again
-            pushState(api, realm);
+
+            Date state = pushState(api, realm);
+
             getSubscriptions(api, realm);
             getEntries(api, realm);
-            getState(api, realm);
+
+            // remove local state after we've pulled server state, so stars don't blink
+            // on and off during sync.
+            if (state != null) {
+                realm.executeTransaction(r -> {
+                    LocalState.all(r).where().lessThanOrEqualTo("mTimeStamp", state).findAll().deleteAllFromRealm();
+                });
+            }
+
         } catch (Throwable e) {
             Timber.e(e);
             return new SyncStatus(e);
@@ -71,22 +84,49 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
         FeederApplication.getBus().post(syncStatus);
     }
 
-    private void pushState(Feedbin api, Realm realm) throws IOException {
+    private Date pushState(Feedbin api, Realm realm) throws IOException {
         publishProgress("Pushing local state");
-        RealmResults<Entry> dirty = realm.where(Entry.class).equalTo("mStarredDirty", true).findAll();
-        Timber.i("Seen %d dirty entries", dirty.size());
-        while (dirty.size() > 0) {
-            List<Integer> add = ListUtils.map(Entry::getId, ListUtils.filter(Entry::isStarred, dirty));
-            List<Integer> remove = ListUtils.map(Entry::getId, ListUtils.filter(e -> !e.isStarred(), dirty));
-            // Now we have the list of IDs, unset the dirty flag. If anything sets it back,
-            // we'll pick it up next time round the loop.
-            realm.executeTransaction(r -> {
-                for (Entry entry : dirty) {
-                    entry.setStarred(entry.isStarred(), false);
+        Set<Integer> addStarred = new HashSet<>();
+        Set<Integer> removeStarred = new HashSet<>();
+        Set<Integer> addUnread = new HashSet<>();
+        Set<Integer> removeUnread = new HashSet<>();
+
+        RealmResults<LocalState> localStates = LocalState.all(realm);
+
+        realm.executeTransaction(r -> {
+            for (LocalState localState : localStates) {
+                int id = localState.getEntryId();
+                if (localState.getMarkStarred() != null) {
+                    addStarred.remove(id);
+                    removeStarred.remove(id);
+                    (localState.getMarkStarred() ? addStarred : removeStarred).add(id);
                 }
-            });
-            api.addStarred(add).execute();
-            api.removeStarred(remove).execute();
+                if (localState.getMarkUnread() != null) {
+                    addUnread.remove(id);
+                    removeUnread.remove(id);
+                    (localState.getMarkUnread() ? addUnread : removeUnread).add(id);
+                }
+            }
+        });
+
+        if (!addStarred.isEmpty()) {
+            api.addStarred(addStarred).execute();
+        }
+        if (!removeStarred.isEmpty()) {
+            api.removeStarred(removeStarred).execute();
+        }
+        if (!addUnread.isEmpty()) {
+            api.addUnread(addUnread).execute();
+        }
+        if (!removeUnread.isEmpty()) {
+            api.removeUnread(removeUnread).execute();
+        }
+
+
+        if (localStates.isEmpty()) {
+            return null;
+        } else {
+            return localStates.last().getTimeStamp();
         }
     }
 
@@ -110,6 +150,12 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
     }
 
     private void getEntries(Feedbin api, Realm realm) throws IOException {
+        // We need these first so we can add new entries in the right state
+        publishProgress("Syncing unread state");
+        List<Integer> unread = api.unread().execute().body();
+        publishProgress("Syncing starred state");
+        List<Integer> starred = api.starred().execute().body();
+
         int entryCount = 0;
         publishProgress("Syncing entries");
         Entry latestEntry = realm.where(Entry.class).findAllSorted("mCreatedAt", Sort.DESCENDING).first(null);
@@ -118,7 +164,11 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
         while (true) {
             Response<List<Entry>> finalResponse = entries;
             for (Entry entry : finalResponse.body()) {
+                // Connect entries to their subscriptions
                 entry.setSubscription(realm.where(Subscription.class).equalTo("mFeedId", entry.getFeedId()).findFirst());
+                // Create entries with the right read/unread state
+                entry.setStarredFromServer(starred.contains(entry.getId()));
+                entry.setUnreadFromServer(unread.contains(entry.getId()));
             }
             realm.executeTransaction(r -> r.copyToRealmOrUpdate(finalResponse.body()));
             PageLinks links = new PageLinks(entries.raw());
@@ -128,44 +178,19 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
             entryCount += entries.body().size();
             publishProgress(String.format(Locale.getDefault(), "Syncing entries (%d)", entryCount));
             entries = api.entriesPaginate(links.getNext()).execute();
-            if (entryCount >= 1000) {
+            if (entryCount >= 300) {
                 // TODO handle better
                 break;
             }
         }
-    }
 
-    private void getState(Feedbin api, Realm realm) throws IOException {
-        publishProgress("Syncing unread state");
-        List<Integer> unread = api.unread().execute().body();
-
-        publishProgress("Syncing starred state");
-        List<Integer> starred = api.starred().execute().body();
-
-        // Need to set these states after sync - marking an entry as read/unread won't
-        // re-fetch it.
+        // Now we need to re-up everything in the database, because there's no way of knowing
+        // if the server changed the starred / unread state of something - we won't have seen
+        // it in the API response if it's not new.
         realm.executeTransaction(r -> {
-            for (Integer unreadId : unread) {
-                Entry entry = r.where(Entry.class).equalTo("mId", unreadId).findFirst();
-                if (entry != null) {
-                    entry.setUnread(true, false);
-                }
-            }
-            for (Integer starredId : starred) {
-                Entry entry = r.where(Entry.class).equalTo("mId", starredId).findFirst();
-                if (entry != null) {
-                    entry.setStarred(true, false);
-                }
-            }
-            for (Entry entry : r.where(Entry.class).equalTo("mUnread", true).findAll()) {
-                if (!unread.contains(entry.getId())) {
-                    entry.setUnread(false, false);
-                }
-            }
-            for (Entry entry : r.where(Entry.class).equalTo("mStarred", true).findAll()) {
-                if (!starred.contains(entry.getId())) {
-                    entry.setStarred(false, false);
-                }
+            for (Entry entry : r.where(Entry.class).findAll()) {
+                entry.setUnreadFromServer(unread.contains(entry.getId()));
+                entry.setStarredFromServer(starred.contains(entry.getId()));
             }
         });
     }

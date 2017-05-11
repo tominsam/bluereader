@@ -3,6 +3,7 @@ package org.movieos.feeder.fragment;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.LinearLayoutManager;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -21,29 +22,34 @@ import io.realm.Sort;
 public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding> {
 
     RealmAdapter<Entry, EntryRowBinding> mAdapter;
+    int mCurrentEntry = -1;
     private Realm mRealm;
+    private int mFirstBeforePause;
+    private int mLastBeforePause;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         FeederApplication.getBus().register(this);
         mRealm = Realm.getDefaultInstance();
-        RealmResults<Entry> entries = mRealm.where(Entry.class).findAllSortedAsync("mCreatedAt", Sort.DESCENDING);
+        RealmResults<Entry> entries = mRealm.where(Entry.class).findAllSorted("mCreatedAt", Sort.DESCENDING);
 
         mAdapter = new RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding.class, entries) {
             @Override
             public void onBindViewHolder(FeedViewHolder<EntryRowBinding> holder, Entry instance) {
                 holder.getBinding().setEntry(instance);
                 holder.itemView.setOnClickListener(v -> {
+                    DetailFragment fragment = DetailFragment.create(holder.getAdapterPosition());
+                    fragment.setTargetFragment(EntriesFragment.this, 0);
                     getFragmentManager()
                         .beginTransaction()
-                        .replace(R.id.main_content, DetailFragment.create(holder.getAdapterPosition()))
+                        .replace(R.id.main_content, fragment)
                         .addToBackStack(null)
                         .commit();
                 });
                 holder.getBinding().star.setOnClickListener(v -> {
                     boolean newState = !v.isSelected();
-                    Entry.setStarred(instance, newState);
+                    Entry.setStarred(mRealm, instance.getId(), newState);
                     v.setSelected(newState);
                 });
             }
@@ -79,6 +85,36 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     @Override
     public void onResume() {
         super.onResume();
+        // if we changed page in the detail view, scroll to minimally make that view visible.
+        // To do this we tracked the first and last visible rows before we left (because in this
+        // method we're not laid out yet), and will assume this has not changed. If the phone
+        // has rotated or resized we'll guess wrong here.
+        if (mBinding != null && mCurrentEntry >= 0 && mFirstBeforePause >= 0 && mLastBeforePause >= 0) {
+            if (mCurrentEntry < mFirstBeforePause) {
+                mBinding.recyclerView.scrollToPosition(mCurrentEntry);
+            } else if (mCurrentEntry > mLastBeforePause) {
+                mBinding.recyclerView.scrollToPosition(mCurrentEntry - (mLastBeforePause - mFirstBeforePause));
+            }
+            mCurrentEntry = -1;
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (mBinding != null) {
+            LinearLayoutManager manager = (LinearLayoutManager) mBinding.recyclerView.getLayoutManager();
+            mFirstBeforePause = manager.findFirstCompletelyVisibleItemPosition();
+            mLastBeforePause = manager.findLastCompletelyVisibleItemPosition();
+        }
+    }
+
+    public void childScrolledTo(int position) {
+        if (mBinding != null) {
+            mBinding.recyclerView.scrollToPosition(position);
+        } else {
+            mCurrentEntry = position;
+        }
     }
 
 

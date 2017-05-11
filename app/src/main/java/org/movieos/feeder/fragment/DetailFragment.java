@@ -22,10 +22,9 @@ import timber.log.Timber;
 public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> {
 
     private static final String INDEX = "index";
-
+    FragmentStatePagerAdapter mAdapter;
     private Realm mRealm;
     private RealmResults<Entry> mEntries;
-    FragmentStatePagerAdapter mAdapter;
 
     public static DetailFragment create(int index) {
         DetailFragment fragment = new DetailFragment();
@@ -70,7 +69,7 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> {
         DetailFragmentBinding binding = DetailFragmentBinding.inflate(inflater, container, false);
 
         binding.toolbar.setNavigationIcon(R.drawable.ic_arrow_back_control_24dp);
-        binding.toolbar.setNavigationOnClickListener(v -> getFragmentManager().popBackStack());
+        binding.toolbar.setNavigationOnClickListener(v -> getActivity().onBackPressed());
 
         binding.viewPager.setAdapter(mAdapter);
         binding.viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
@@ -81,10 +80,13 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> {
 
             @Override
             public void onPageSelected(int position) {
-                Entry.setUnread(mEntries.get(position), false);
+                Entry.setUnread(mRealm, mEntries.get(position).getId(), false);
                 getArguments().putInt(INDEX, position);
-                    if (mBinding != null) {
+                if (mBinding != null) {
                     mBinding.toolbar.setTitle(mEntries.get(position).getTitle());
+                }
+                if (getTargetFragment() instanceof EntriesFragment) {
+                    ((EntriesFragment) getTargetFragment()).childScrolledTo(position);
                 }
             }
 
@@ -103,7 +105,7 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> {
         Timber.i("index is %d", index);
         if (mBinding != null) {
             mBinding.viewPager.setCurrentItem(index, false);
-            Entry.setUnread(mEntries.get(index), false);
+            Entry.setUnread(mRealm, mEntries.get(index).getId(), false);
         }
     }
 

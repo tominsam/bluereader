@@ -28,10 +28,10 @@
             android:layout_marginEnd="16dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
-            android:text="@{entry.title + (entry.starredDirty ? `dirty` : ``)}"
+            android:text="@{entry.title}"
             android:textAppearance="@style/text_title"
             android:textColor="@color/primary_text"
-            app:bold="@{entry.unread}"
+            app:bold="@{entry.locallyUnread}"
             tools:text="Entry title"
             />
 
@@ -74,7 +74,7 @@
             android:minHeight="48dp"
             android:minWidth="48dp"
             android:src="@drawable/ic_star_statelist"
-            app:selected="@{entry.isStarred}"
+            app:selected="@{entry.isLocallyStarred}"
             />
 
     </RelativeLayout>

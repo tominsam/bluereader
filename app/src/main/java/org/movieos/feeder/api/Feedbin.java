@@ -88,7 +88,7 @@ public class Feedbin {
         return mApi.unread();
     }
 
-    public Call<Void> addStarred(List<Integer> ids) {
+    public Call<Void> addStarred(Iterable<Integer> ids) {
         JsonObject base = new JsonObject();
         JsonArray jsonIds = new JsonArray();
         for (Integer id : ids) {
@@ -98,7 +98,7 @@ public class Feedbin {
         return mApi.addStarred(base);
     }
 
-    public Call<Void> removeStarred(List<Integer> ids) {
+    public Call<Void> removeStarred(Iterable<Integer> ids) {
         JsonObject base = new JsonObject();
         JsonArray jsonIds = new JsonArray();
         for (Integer id : ids) {
@@ -106,6 +106,26 @@ public class Feedbin {
         }
         base.add("starred_entries", jsonIds);
         return mApi.removeStarred(base);
+    }
+
+    public Call<Void> addUnread(Iterable<Integer> ids) {
+        JsonObject base = new JsonObject();
+        JsonArray jsonIds = new JsonArray();
+        for (Integer id : ids) {
+            jsonIds.add(id);
+        }
+        base.add("unread_entries", jsonIds);
+        return mApi.addUnread(base);
+    }
+
+    public Call<Void> removeUnread(Iterable<Integer> ids) {
+        JsonObject base = new JsonObject();
+        JsonArray jsonIds = new JsonArray();
+        for (Integer id : ids) {
+            jsonIds.add(id);
+        }
+        base.add("unread_entries", jsonIds);
+        return mApi.removeUnread(base);
     }
 
 
@@ -204,6 +224,12 @@ public class Feedbin {
 
         @POST("starred_entries/delete.json")
         Call<Void> removeStarred(@Body JsonObject json);
+
+        @POST("unread_entries.json")
+        Call<Void> addUnread(@Body JsonObject json);
+
+        @POST("unread_entries/delete.json")
+        Call<Void> removeUnread(@Body JsonObject json);
     }
 
     private static class JavaDateDeserializer implements JsonDeserializer<Date> {

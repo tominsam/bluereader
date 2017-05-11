@@ -2,6 +2,7 @@ package org.movieos.feeder;
 
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.webkit.WebView;
 
@@ -9,6 +10,7 @@ import com.squareup.otto.Subscribe;
 
 import org.movieos.feeder.fragment.EntriesFragment;
 import org.movieos.feeder.fragment.LoginFragment;
+import org.movieos.feeder.utilities.FragmentBackHandler;
 import org.movieos.feeder.utilities.Settings;
 import org.movieos.feeder.utilities.SyncTask;
 
@@ -52,6 +54,18 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.main_content);
+        if (fragment instanceof FragmentBackHandler) {
+            boolean handled = ((FragmentBackHandler) fragment).onBackPressed();
+            if (handled) {
+                return;
+            }
+        }
+        super.onBackPressed();
     }
 
     @SuppressWarnings("unused")
