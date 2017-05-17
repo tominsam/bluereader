@@ -156,7 +156,7 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
             // update "server" value - this kicks the object state for observes
             r.where(Entry.class).equalTo("mId", id).findFirst().setStarredFromServer(starred);
         });
-        new SyncTask(context, true).start();
+        SyncTask.sync(context, false, true);
     }
 
     @UiThread
@@ -167,7 +167,7 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
             // update "server" value - this kicks the object state for observes
             r.where(Entry.class).equalTo("mId", id).findFirst().setUnreadFromServer(unread);
         });
-        new SyncTask(context, true).start();
+        SyncTask.sync(context, false, true);
     }
 
 

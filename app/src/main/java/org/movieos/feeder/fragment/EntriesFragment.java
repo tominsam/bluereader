@@ -100,7 +100,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
         binding.toolbar.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case R.id.menu_refresh:
-                    new SyncTask(getActivity(), false).start();
+                    SyncTask.sync(getActivity(), true, false);
                     return true;
                 default:
                     return false;

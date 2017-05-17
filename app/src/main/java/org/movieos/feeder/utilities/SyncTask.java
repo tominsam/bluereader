@@ -38,12 +38,21 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
     Context mContext;
     boolean mPushOnly;
 
-    public SyncTask(Context context, boolean pushOnly) {
+    private SyncTask(Context context, boolean pushOnly) {
         mContext = context;
         mPushOnly = pushOnly;
     }
 
-    public void start() {
+    public static void sync(Context context, boolean force, boolean pushOnly) {
+        Realm realm = Realm.getDefaultInstance();
+        SyncState state = SyncState.latest(realm);
+        if (state == null || state.isStale() || force || pushOnly) {
+            new SyncTask(context, pushOnly).start();
+        }
+        realm.close();
+    }
+
+    private void start() {
         executeOnExecutor(SYNC_EXECUTOR);
     }
 

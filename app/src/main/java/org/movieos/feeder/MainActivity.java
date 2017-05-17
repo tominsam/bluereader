@@ -8,7 +8,6 @@ import android.webkit.WebView;
 
 import org.movieos.feeder.fragment.EntriesFragment;
 import org.movieos.feeder.fragment.LoginFragment;
-import org.movieos.feeder.model.SyncState;
 import org.movieos.feeder.utilities.FragmentBackHandler;
 import org.movieos.feeder.utilities.Settings;
 import org.movieos.feeder.utilities.SyncTask;
@@ -37,11 +36,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         mRealm = Realm.getDefaultInstance();
-        SyncState state = SyncState.latest(mRealm);
-        if (state == null || state.isStale()) {
-            new SyncTask(this, false).start();
-        }
         new WebView(this).loadData("test", null, null);
+        SyncTask.sync(this, false, false);
     }
 
     @Override
