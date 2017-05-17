@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import org.movieos.feeder.model.IntegerPrimaryKey;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 import io.realm.OrderedCollectionChangeSet;
 import io.realm.OrderedRealmCollectionChangeListener;
@@ -66,6 +67,11 @@ public abstract class RealmAdapter<T extends RealmObject & IntegerPrimaryKey, B 
     @Override
     public long getItemId(int position) {
         return mQuery.get(position).getId();
+    }
+
+    public List<Integer> getIds() {
+        //noinspection Convert2MethodRef
+        return ListUtils.map(t -> t.getId(), mQuery);
     }
 
     @SuppressWarnings("unchecked")

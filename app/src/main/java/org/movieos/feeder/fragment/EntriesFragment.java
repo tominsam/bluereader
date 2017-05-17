@@ -23,6 +23,7 @@ import java.text.DateFormat;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import timber.log.Timber;
 
 public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding> {
 
@@ -56,10 +57,8 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
             public void onBindViewHolder(FeedViewHolder<EntryRowBinding> holder, Entry instance) {
                 holder.getBinding().setEntry(instance);
                 holder.itemView.setOnClickListener(v -> {
-                    if (instance.isLocallyUnread()) {
-                        Entry.setUnread(getContext(), mRealm, instance, false);
-                    }
-                    DetailFragment fragment = DetailFragment.create(holder.getAdapterPosition(), mViewType);
+                    Entry.setUnread(getContext(), mRealm, Entry.byId(instance.getId()), false);
+                    DetailFragment fragment = DetailFragment.create(getIds(), instance.getId());
                     fragment.setTargetFragment(EntriesFragment.this, 0);
                     getFragmentManager()
                         .beginTransaction()
@@ -172,12 +171,17 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     }
 
 
-    public void childScrolledTo(int position) {
-        if (mBinding != null) {
-            mBinding.recyclerView.scrollToPosition(position);
-        } else {
-            mCurrentEntry = position;
+    public void childDisplayedEntryId(int entryId) {
+        Timber.i("childDiplayedEntryId " + entryId);
+        Entry entry = Entry.byId(entryId);
+        if (entry != null && entry.isLocallyUnread()) {
+            Entry.setUnread(getContext(), mRealm, entry, false);
         }
+//        if (mBinding != null) {
+//            mBinding.recyclerView.scrollToPosition();
+//        } else {
+//            mCurrentEntry = position;
+//        }
     }
 
     private void setViewType(@NonNull Entry.ViewType viewType) {

@@ -17,61 +17,56 @@ import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.DetailFragmentBinding;
 import org.movieos.feeder.model.Entry;
 
-import io.realm.OrderedCollectionChangeSet;
-import io.realm.OrderedRealmCollectionChangeListener;
+import java.util.ArrayList;
+import java.util.List;
+
 import io.realm.Realm;
+import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 import timber.log.Timber;
 
-public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> implements OrderedRealmCollectionChangeListener<RealmResults<Entry>> {
+public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> implements RealmChangeListener<RealmResults<Entry>> {
 
-    private static final String INDEX = "index";
-    private static final String VIEW_TYPE = "view_type";
+    private static final String INITIAL_ENTRY = "current_entry";
+    private static final String ENTRY_IDS = "entry_ids";
 
     FragmentStatePagerAdapter mAdapter;
     private Realm mRealm;
-    private RealmResults<Entry> mEntries;
+    private List<Integer> mEntryIds;
 
-    public static DetailFragment create(int index, Entry.ViewType viewType) {
+    public static DetailFragment create(List<Integer> entryIds, int currentEntryId) {
         DetailFragment fragment = new DetailFragment();
         fragment.setArguments(new Bundle());
-        fragment.getArguments().putInt(INDEX, index);
-        fragment.getArguments().putSerializable(VIEW_TYPE, viewType);
+        fragment.getArguments().putIntegerArrayList(DetailFragment.ENTRY_IDS, new ArrayList<>(entryIds));
+        fragment.getArguments().putInt(INITIAL_ENTRY, currentEntryId);
         return fragment;
     }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mRealm = Realm.getDefaultInstance();
+        mEntryIds = getArguments().getIntegerArrayList(ENTRY_IDS);
+        // Watch all realm objects for changes
+        mRealm.where(Entry.class).findAll().addChangeListener(this);
 
         mAdapter = new FragmentStatePagerAdapter(getChildFragmentManager()) {
             @Override
             public Fragment getItem(int position) {
-                return DetailPageFragment.create(position);
+                return DetailPageFragment.create(mEntryIds.get(position));
             }
 
             @Override
             public int getCount() {
-                return mEntries.size();
+                return mEntryIds.size();
             }
         };
-
-        mRealm = Realm.getDefaultInstance();
-        mEntries = Entry.entries(mRealm, (Entry.ViewType) getArguments().getSerializable(VIEW_TYPE));
-        mEntries.addChangeListener(this);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mEntries.removeChangeListener(this);
         mRealm.close();
-    }
-
-    @Override
-    public void onChange(RealmResults<Entry> collection, OrderedCollectionChangeSet changeSet) {
-        mAdapter.notifyDataSetChanged();
-        updateMenu();
     }
 
     @NonNull
@@ -87,26 +82,18 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
         binding.viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
             }
 
             @Override
             public void onPageSelected(int position) {
-                if (mEntries.get(position).isLocallyUnread()) {
-                    Entry.setUnread(getContext(), mRealm, mEntries.get(position), false);
-                }
-                getArguments().putInt(INDEX, position);
-                if (mBinding != null) {
-                    mBinding.toolbar.setTitle(mEntries.get(position).getTitle());
-                }
+                updateMenu();
                 if (getTargetFragment() instanceof EntriesFragment) {
-                    ((EntriesFragment) getTargetFragment()).childScrolledTo(position);
+                    ((EntriesFragment) getTargetFragment()).childDisplayedEntryId(mEntryIds.get(position));
                 }
             }
 
             @Override
             public void onPageScrollStateChanged(int state) {
-
             }
         });
         return binding;
@@ -115,12 +102,14 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
     @Override
     public void onResume() {
         super.onResume();
-        int index = getArguments().getInt(INDEX);
-        Timber.i("index is %d", index);
-        if (mBinding != null) {
-            mBinding.viewPager.setCurrentItem(index, false);
-        }
         updateMenu();
+        if (mBinding != null && getArguments().containsKey(INITIAL_ENTRY)) {
+            int index = mEntryIds.indexOf(getArguments().getInt(INITIAL_ENTRY));
+            if (index >= 0 && index < mEntryIds.size()) {
+                mBinding.viewPager.setCurrentItem(index, false);
+            }
+            getArguments().remove(INITIAL_ENTRY);
+        }
     }
 
     void updateMenu() {
@@ -128,11 +117,7 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
         if (mBinding == null) {
             return;
         }
-
-        Entry entry = getEntry(mBinding.viewPager.getCurrentItem());
-        if (entry == null) {
-            return;
-        }
+        Entry entry = Entry.byId(mEntryIds.get(mBinding.viewPager.getCurrentItem()));
 
         MenuItem starred = mBinding.toolbar.getMenu().findItem(R.id.menu_star);
         Drawable star = ContextCompat.getDrawable(getContext(), entry.isLocallyStarred() ? R.drawable.ic_star_24dp : R.drawable.ic_star_border_24dp);
@@ -165,12 +150,8 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
 
     }
 
-    @Nullable
-    public Entry getEntry(int position) {
-        if (position < 0 || position >= mEntries.size()) {
-            return null;
-        }
-        return mEntries.get(position);
+    @Override
+    public void onChange(RealmResults<Entry> element) {
+        updateMenu();
     }
-
 }

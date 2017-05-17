@@ -2,6 +2,9 @@
 package org.movieos.feeder.model;
 
 import android.content.Context;
+import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
 
 import com.google.gson.annotations.SerializedName;
@@ -9,6 +12,7 @@ import com.google.gson.annotations.SerializedName;
 import org.movieos.feeder.utilities.SyncTask;
 
 import java.util.Date;
+import java.util.Locale;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
@@ -54,6 +58,16 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
         UNREAD,
         STARRED,
         ALL,
+    }
+
+    @Nullable
+    public static Entry byId(int id) {
+        Realm realm = Realm.getDefaultInstance();
+        try {
+            return realm.where(Entry.class).equalTo("mId", id).findFirst();
+        } finally {
+            realm.close();
+        }
     }
 
     public static RealmResults<Entry> entries(Realm realm, ViewType viewType) {
@@ -123,6 +137,14 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
         mSubscription = subscription;
     }
 
+    public String getDisplayAuthor() {
+        if (mAuthor == null) {
+            return mSubscription.getTitle();
+        } else {
+            return String.format("%s - %s", mSubscription.getTitle(), mAuthor);
+        }
+    }
+
     public boolean isLocallyStarred() {
         Realm realm = Realm.getDefaultInstance();
         boolean starred = mStarred;
@@ -156,19 +178,22 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
             // update "server" value - this kicks the object state for observes
             r.where(Entry.class).equalTo("mId", id).findFirst().setStarredFromServer(starred);
         });
-        SyncTask.sync(context, false, true);
+        new Handler().postDelayed(() -> SyncTask.sync(context, false, true), 5000);
     }
 
     @UiThread
-    public static void setUnread(Context context, Realm realm, Entry entry, boolean unread) {
+    public static void setUnread(@NonNull Context context, @NonNull Realm realm, @NonNull Entry entry, boolean unread) {
         int id = entry.getId();
         realm.executeTransactionAsync(r -> {
             r.copyToRealm(new LocalState(id, unread, null));
             // update "server" value - this kicks the object state for observes
             r.where(Entry.class).equalTo("mId", id).findFirst().setUnreadFromServer(unread);
         });
-        SyncTask.sync(context, false, true);
+        new Handler().postDelayed(() -> SyncTask.sync(context, false, true), 5000);
     }
 
-
+    @Override
+    public String toString() {
+        return String.format(Locale.US, "<Entry %d %s>", getId(), getTitle());
+    }
 }

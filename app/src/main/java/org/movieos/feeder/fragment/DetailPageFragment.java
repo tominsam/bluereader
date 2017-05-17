@@ -3,6 +3,7 @@ package org.movieos.feeder.fragment;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.customtabs.CustomTabsIntent;
 import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
@@ -19,22 +20,33 @@ import org.movieos.feeder.model.Entry;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
+
+import io.realm.Realm;
+import timber.log.Timber;
 
 public class DetailPageFragment extends DataBindingFragment<DetailPageFragmentBinding> {
 
-    private static final String INDEX = "index";
+    private static final String ENTRY_ID = "entry_id";
 
     static String sTemplate;
 
-    public static DetailPageFragment create(int index) {
+    Entry mEntry;
+
+    public static DetailPageFragment create(int entryId) {
         DetailPageFragment fragment = new DetailPageFragment();
         fragment.setArguments(new Bundle());
-        fragment.getArguments().putInt(INDEX, index);
+        fragment.getArguments().putInt(ENTRY_ID, entryId);
         return fragment;
     }
 
-    public Entry getEntry() {
-        return ((DetailFragment) getParentFragment()).getEntry(getArguments().getInt(INDEX));
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setUserVisibleHint(false);
+        Realm realm = Realm.getDefaultInstance();
+        mEntry = Entry.byId(getArguments().getInt(ENTRY_ID));
+        realm.close();
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -60,9 +72,11 @@ public class DetailPageFragment extends DataBindingFragment<DetailPageFragmentBi
 
         binding.webView.loadDataWithBaseURL(null,
             getTemplate()
-                .replace("{{body}}", getEntry().getContent())
-                .replace("{{title}}", getEntry().getTitle())
-                .replace("{{link}}", getEntry().getUrl())
+                .replace("{{body}}", mEntry.getContent())
+                .replace("{{title}}", mEntry.getTitle())
+                .replace("{{link}}", mEntry.getUrl())
+                .replace("{{author}}", mEntry.getDisplayAuthor())
+                .replace("{{date}}", DateFormat.getDateTimeInstance().format(mEntry.getPublished()))
             , "text/html", "utf-8", "");
         return binding;
     }
@@ -91,4 +105,18 @@ public class DetailPageFragment extends DataBindingFragment<DetailPageFragmentBi
         return sTemplate;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (isVisible()) {
+            Timber.i("entry " + mEntry + " is visible");
+        }
+
+        if (isVisible() && mEntry.isLocallyUnread()) {
+            Realm realm = Realm.getDefaultInstance();
+            //Entry.setUnread(getContext(), realm, mEntry, false);
+            realm.close();
+        }
+
+    }
 }

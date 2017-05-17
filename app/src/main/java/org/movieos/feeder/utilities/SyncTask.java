@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import io.realm.Realm;
-import io.realm.RealmResults;
 import io.realm.Sort;
 import retrofit2.Response;
 import timber.log.Timber;
@@ -63,21 +62,13 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
         Realm realm = Realm.getDefaultInstance();
         try {
             // Push state. We store the date we pushed up until.
-            Date state = pushState(api, realm);
+            pushState(api, realm);
 
             if (!mPushOnly) {
                 // Pull server state
                 getSubscriptions(api, realm);
                 getTaggings(api, realm);
                 getEntries(api, realm);
-
-                // remove local state after we've pulled server state, so stars don't blink
-                // on and off during sync.
-                if (state != null) {
-                    realm.executeTransaction(r -> {
-                        LocalState.all(r).where().lessThanOrEqualTo("mTimeStamp", state).findAll().deleteAllFromRealm();
-                    });
-                }
 
                 // update last sync date to be "now"
                 realm.executeTransaction(r -> {
@@ -110,14 +101,15 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
         FeederApplication.getBus().post(syncStatus);
     }
 
-    private Date pushState(Feedbin api, Realm realm) throws IOException {
+    private void pushState(Feedbin api, Realm realm) throws IOException {
         publishProgress("Pushing local state");
         Set<Integer> addStarred = new HashSet<>();
         Set<Integer> removeStarred = new HashSet<>();
         Set<Integer> addUnread = new HashSet<>();
         Set<Integer> removeUnread = new HashSet<>();
 
-        RealmResults<LocalState> localStates = LocalState.all(realm);
+        // make list solid here so that later changes are predictable
+        List<LocalState> localStates = new ArrayList<>(LocalState.all(realm));
 
         realm.executeTransaction(r -> {
             for (LocalState localState : localStates) {
@@ -137,21 +129,43 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
 
         if (!addStarred.isEmpty()) {
             api.addStarred(addStarred).execute();
+            realm.executeTransaction(r -> {
+                for (Entry entry : r.where(Entry.class).in("mId", addStarred.toArray(new Integer[0])).findAll()) {
+                    entry.setStarredFromServer(true);
+                }
+            });
         }
         if (!removeStarred.isEmpty()) {
             api.removeStarred(removeStarred).execute();
+            realm.executeTransaction(r -> {
+                for (Entry entry : r.where(Entry.class).in("mId", removeStarred.toArray(new Integer[0])).findAll()) {
+                    entry.setStarredFromServer(false);
+                }
+            });
         }
         if (!addUnread.isEmpty()) {
             api.addUnread(addUnread).execute();
+            realm.executeTransaction(r -> {
+                for (Entry entry : r.where(Entry.class).in("mId", addUnread.toArray(new Integer[0])).findAll()) {
+                    entry.setUnreadFromServer(true);
+                }
+            });
         }
         if (!removeUnread.isEmpty()) {
             api.removeUnread(removeUnread).execute();
+            realm.executeTransaction(r -> {
+                for (Entry entry : r.where(Entry.class).in("mId", removeUnread.toArray(new Integer[0])).findAll()) {
+                    entry.setUnreadFromServer(false);
+                }
+            });
         }
 
-        if (localStates.isEmpty()) {
-            return null;
-        } else {
-            return localStates.last().getTimeStamp();
+        if (!localStates.isEmpty()) {
+            realm.executeTransaction(r -> {
+                for (LocalState localState : localStates) {
+                    localState.deleteFromRealm();
+                }
+            });
         }
     }
 

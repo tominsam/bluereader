@@ -12,7 +12,6 @@ Many
 * remove local state table entries when pushing state, not only when pulling state
 * better icons
 * Subscriptions list
-* Times on cards
 
 ## Features to add:
 
