@@ -1,5 +1,6 @@
 package org.movieos.feeder.fragment;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -7,12 +8,18 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+import org.movieos.feeder.FeederApplication;
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.EntriesFragmentBinding;
 import org.movieos.feeder.databinding.EntryRowBinding;
 import org.movieos.feeder.model.Entry;
+import org.movieos.feeder.model.SyncState;
 import org.movieos.feeder.utilities.RealmAdapter;
 import org.movieos.feeder.utilities.SyncTask;
+
+import java.text.DateFormat;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -33,6 +40,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        FeederApplication.getBus().register(this);
         mRealm = Realm.getDefaultInstance();
         if (savedInstanceState != null) {
             mViewType = (Entry.ViewType) savedInstanceState.getSerializable(VIEW_TYPE);
@@ -48,7 +56,9 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
             public void onBindViewHolder(FeedViewHolder<EntryRowBinding> holder, Entry instance) {
                 holder.getBinding().setEntry(instance);
                 holder.itemView.setOnClickListener(v -> {
-                    Entry.setUnread(mRealm, instance, false);
+                    if (instance.isLocallyUnread()) {
+                        Entry.setUnread(getContext(), mRealm, instance, false);
+                    }
                     DetailFragment fragment = DetailFragment.create(holder.getAdapterPosition(), mViewType);
                     fragment.setTargetFragment(EntriesFragment.this, 0);
                     getFragmentManager()
@@ -59,7 +69,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
                 });
                 holder.getBinding().star.setOnClickListener(v -> {
                     boolean newState = !v.isSelected();
-                    Entry.setStarred(mRealm, instance, newState);
+                    Entry.setStarred(getContext(), mRealm, instance, newState);
                     v.setSelected(newState);
                 });
             }
@@ -76,6 +86,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     public void onDestroy() {
         super.onDestroy();
         mRealm.close();
+        FeederApplication.getBus().unregister(this);
     }
 
 
@@ -89,7 +100,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
         binding.toolbar.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case R.id.menu_refresh:
-                    new SyncTask(getActivity()).start();
+                    new SyncTask(getActivity(), false).start();
                     return true;
                 default:
                     return false;
@@ -106,6 +117,8 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     @Override
     public void onResume() {
         super.onResume();
+        displaySyncTime();
+
         // if we changed page in the detail view, scroll to minimally make that view visible.
         // To do this we tracked the first and last visible rows before we left (because in this
         // method we're not laid out yet), and will assume this has not changed. If the phone
@@ -129,6 +142,35 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
             mLastBeforePause = manager.findLastCompletelyVisibleItemPosition();
         }
     }
+
+    @SuppressWarnings("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void syncStatus(SyncTask.SyncStatus status) {
+        if (mBinding == null) {
+            return;
+        }
+        if (status.isComplete()) {
+            displaySyncTime();
+        } else {
+            mBinding.toolbar.setSubtitle(status.getStatus());
+        }
+        if (status.getException() != null && isResumed()) {
+            new AlertDialog.Builder(getActivity())
+                .setMessage(status.getException().getLocalizedMessage())
+                .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                .show();
+        }
+    }
+
+    private void displaySyncTime() {
+        if (mBinding == null) {
+            return;
+        }
+        SyncState state = SyncState.latest(mRealm);
+        DateFormat format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM);
+        mBinding.toolbar.setSubtitle("Last synced " + (state == null ? "never" : format.format(state.getTimeStamp())));
+    }
+
 
     public void childScrolledTo(int position) {
         if (mBinding != null) {

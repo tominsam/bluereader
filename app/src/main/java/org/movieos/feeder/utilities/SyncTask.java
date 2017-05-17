@@ -9,6 +9,7 @@ import org.movieos.feeder.api.PageLinks;
 import org.movieos.feeder.model.Entry;
 import org.movieos.feeder.model.LocalState;
 import org.movieos.feeder.model.Subscription;
+import org.movieos.feeder.model.SyncState;
 import org.movieos.feeder.model.Tagging;
 
 import java.io.IOException;
@@ -35,9 +36,11 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
     private static final int MAX_ENTRIES_COUNT = 1000;
 
     Context mContext;
+    boolean mPushOnly;
 
-    public SyncTask(Context context) {
+    public SyncTask(Context context, boolean pushOnly) {
         mContext = context;
+        mPushOnly = pushOnly;
     }
 
     public void start() {
@@ -53,22 +56,33 @@ public class SyncTask extends AsyncTask<Void, String, SyncTask.SyncStatus> {
             // Push state. We store the date we pushed up until.
             Date state = pushState(api, realm);
 
-            // Pull server state
-            getSubscriptions(api, realm);
-            getTaggings(api, realm);
-            getEntries(api, realm);
+            if (!mPushOnly) {
+                // Pull server state
+                getSubscriptions(api, realm);
+                getTaggings(api, realm);
+                getEntries(api, realm);
 
-            // remove local state after we've pulled server state, so stars don't blink
-            // on and off during sync.
-            if (state != null) {
+                // remove local state after we've pulled server state, so stars don't blink
+                // on and off during sync.
+                if (state != null) {
+                    realm.executeTransaction(r -> {
+                        LocalState.all(r).where().lessThanOrEqualTo("mTimeStamp", state).findAll().deleteAllFromRealm();
+                    });
+                }
+
+                // update last sync date to be "now"
                 realm.executeTransaction(r -> {
-                    LocalState.all(r).where().lessThanOrEqualTo("mTimeStamp", state).findAll().deleteAllFromRealm();
+                    r.copyToRealmOrUpdate(new SyncState(1, new Date()));
                 });
             }
 
         } catch (Throwable e) {
             Timber.e(e);
-            return new SyncStatus(e);
+            if (mPushOnly) {
+                return new SyncStatus(true, "Failed");
+            } else {
+                return new SyncStatus(e);
+            }
         } finally {
             realm.close();
         }

@@ -6,8 +6,6 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.webkit.WebView;
 
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 import org.movieos.feeder.fragment.EntriesFragment;
 import org.movieos.feeder.fragment.LoginFragment;
 import org.movieos.feeder.utilities.FragmentBackHandler;
@@ -37,17 +35,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        new SyncTask(this).start();
+        new SyncTask(this, false).start();
         mRealm = Realm.getDefaultInstance();
-        FeederApplication.getBus().register(this);
-
         new WebView(this).loadData("test", null, null);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        FeederApplication.getBus().unregister(this);
         mRealm.close();
     }
 
@@ -66,21 +61,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         super.onBackPressed();
-    }
-
-    @SuppressWarnings("unused")
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void syncStatus(SyncTask.SyncStatus status) {
-        if (mSnackbar != null) {
-            mSnackbar.setText(status.getStatus());
-            mSnackbar.show();
-        } else {
-            mSnackbar = Snackbar.make(this.findViewById(R.id.main_content), status.getStatus(), Snackbar.LENGTH_LONG);
-            mSnackbar.show();
-        }
-        if (status.isComplete() && status.getException() == null) {
-            mSnackbar.dismiss();
-        }
     }
 
 }

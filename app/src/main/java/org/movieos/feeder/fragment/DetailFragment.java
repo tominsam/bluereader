@@ -1,5 +1,6 @@
 package org.movieos.feeder.fragment;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -91,7 +92,9 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
 
             @Override
             public void onPageSelected(int position) {
-                Entry.setUnread(mRealm, mEntries.get(position), false);
+                if (mEntries.get(position).isLocallyUnread()) {
+                    Entry.setUnread(getContext(), mRealm, mEntries.get(position), false);
+                }
                 getArguments().putInt(INDEX, position);
                 if (mBinding != null) {
                     mBinding.toolbar.setTitle(mEntries.get(position).getTitle());
@@ -127,6 +130,9 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
         }
 
         Entry entry = getEntry(mBinding.viewPager.getCurrentItem());
+        if (entry == null) {
+            return;
+        }
 
         MenuItem starred = mBinding.toolbar.getMenu().findItem(R.id.menu_star);
         Drawable star = ContextCompat.getDrawable(getContext(), entry.isLocallyStarred() ? R.drawable.ic_star_24dp : R.drawable.ic_star_border_24dp);
@@ -141,10 +147,17 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
         mBinding.toolbar.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case R.id.menu_star:
-                    Entry.setStarred(mRealm, entry, !entry.isLocallyStarred());
+                    Entry.setStarred(getContext(), mRealm, entry, !entry.isLocallyStarred());
                     break;
                 case R.id.menu_unread:
-                    Entry.setUnread(mRealm, entry, !entry.isLocallyUnread());
+                    Entry.setUnread(getContext(), mRealm, entry, !entry.isLocallyUnread());
+                    break;
+                case R.id.menu_share:
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType("text/plain");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, entry.getUrl());
+                    Intent chooser = Intent.createChooser(shareIntent, null);
+                    startActivity(chooser);
                     break;
             }
             return true;
@@ -152,7 +165,11 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
 
     }
 
+    @Nullable
     public Entry getEntry(int position) {
+        if (position < 0 || position >= mEntries.size()) {
+            return null;
+        }
         return mEntries.get(position);
     }
 
