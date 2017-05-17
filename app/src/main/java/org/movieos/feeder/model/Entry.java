@@ -146,16 +146,22 @@ public class Entry extends RealmObject implements IntegerPrimaryKey {
 
 
     @UiThread
-    public static void setStarred(Realm realm, int entryId, boolean starred) {
+    public static void setStarred(Realm realm, Entry entry, boolean starred) {
+        int id = entry.getId();
         realm.executeTransactionAsync(r -> {
-            r.copyToRealm(new LocalState(entryId, null, starred));
+            r.copyToRealm(new LocalState(id, null, starred));
+            // update "server" value - this kicks the object state for observes
+            r.where(Entry.class).equalTo("mId", id).findFirst().setStarredFromServer(starred);
         });
     }
 
     @UiThread
-    public static void setUnread(Realm realm, int entryId, boolean unread) {
+    public static void setUnread(Realm realm, Entry entry, boolean unread) {
+        int id = entry.getId();
         realm.executeTransactionAsync(r -> {
-            r.copyToRealm(new LocalState(entryId, unread, null));
+            r.copyToRealm(new LocalState(id, unread, null));
+            // update "server" value - this kicks the object state for observes
+            r.where(Entry.class).equalTo("mId", id).findFirst().setUnreadFromServer(unread);
         });
     }
 

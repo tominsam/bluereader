@@ -11,4 +11,7 @@
 
     <color name="star_filled">#FFFFDF00</color>
     <color name="star_border">#FF757575</color>
+
+    <color name="toolbar_selected">#FFFFFFFF</color>
+    <color name="toolbar_default">#FFEEEEEE</color>
 </resources>

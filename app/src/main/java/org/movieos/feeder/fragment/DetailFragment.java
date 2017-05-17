@@ -1,12 +1,15 @@
 package org.movieos.feeder.fragment;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.ViewGroup;
 
 import org.movieos.feeder.R;
@@ -67,6 +70,7 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
     @Override
     public void onChange(RealmResults<Entry> collection, OrderedCollectionChangeSet changeSet) {
         mAdapter.notifyDataSetChanged();
+        updateMenu();
     }
 
     @NonNull
@@ -76,6 +80,7 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
 
         binding.toolbar.setNavigationIcon(R.drawable.ic_arrow_back_control_24dp);
         binding.toolbar.setNavigationOnClickListener(v -> getActivity().onBackPressed());
+        binding.toolbar.inflateMenu(R.menu.detail_menu);
 
         binding.viewPager.setAdapter(mAdapter);
         binding.viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
@@ -86,7 +91,7 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
 
             @Override
             public void onPageSelected(int position) {
-                Entry.setUnread(mRealm, mEntries.get(position).getId(), false);
+                Entry.setUnread(mRealm, mEntries.get(position), false);
                 getArguments().putInt(INDEX, position);
                 if (mBinding != null) {
                     mBinding.toolbar.setTitle(mEntries.get(position).getTitle());
@@ -111,8 +116,40 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
         Timber.i("index is %d", index);
         if (mBinding != null) {
             mBinding.viewPager.setCurrentItem(index, false);
-            Entry.setUnread(mRealm, mEntries.get(index).getId(), false);
         }
+        updateMenu();
+    }
+
+    void updateMenu() {
+        Timber.i("Updating menu");
+        if (mBinding == null) {
+            return;
+        }
+
+        Entry entry = getEntry(mBinding.viewPager.getCurrentItem());
+
+        MenuItem starred = mBinding.toolbar.getMenu().findItem(R.id.menu_star);
+        Drawable star = ContextCompat.getDrawable(getContext(), entry.isLocallyStarred() ? R.drawable.ic_star_24dp : R.drawable.ic_star_border_24dp);
+        star.setTint(0xFFFFFFFF);
+        starred.setIcon(star);
+
+        MenuItem unread = mBinding.toolbar.getMenu().findItem(R.id.menu_unread);
+        Drawable circle = ContextCompat.getDrawable(getContext(), entry.isLocallyUnread() ? R.drawable.ic_remove_circle_black_24dp: R.drawable.ic_remove_circle_outline_black_24dp);
+        circle.setTint(0xFFFFFFFF);
+        unread.setIcon(circle);
+
+        mBinding.toolbar.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.menu_star:
+                    Entry.setStarred(mRealm, entry, !entry.isLocallyStarred());
+                    break;
+                case R.id.menu_unread:
+                    Entry.setUnread(mRealm, entry, !entry.isLocallyUnread());
+                    break;
+            }
+            return true;
+        });
+
     }
 
     public Entry getEntry(int position) {
