@@ -9,8 +9,7 @@ Many
 
 * fix bug where a sync when looking at an atricle can mess up the viewpager
   position
-* sync local changes when user marks things as starred / read
-* Allow marking unread/starred from detail view
+* remove local state table entries when pushing state, not only when pulling state
 * better icons
 * Subscriptions list
 * Times on cards

@@ -12,10 +12,7 @@ public class DataBinding {
 
     @BindingAdapter({"dateText"})
     public static void dateText(TextView textView, Date date) {
-//        Format dateFormat = android.text.format.DateFormat.getDateFormat(textView.getContext());
-//        String pattern = ((SimpleDateFormat) dateFormat).toLocalizedPattern();
-//        SimpleDateFormat format = new SimpleDateFormat(pattern, Locale.getDefault());
-        DateFormat format = DateFormat.getDateInstance(DateFormat.LONG);
+        DateFormat format = DateFormat.getDateTimeInstance();
         textView.setText(format.format(date));
     }
 

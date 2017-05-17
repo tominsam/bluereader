@@ -31,4 +31,8 @@ public class SyncState extends RealmObject {
         return mTimeStamp;
     }
 
+    public boolean isStale() {
+        return new Date().getTime() - mTimeStamp.getTime() > 1000 * 60 * 20;
+    }
+
 }

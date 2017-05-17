@@ -167,7 +167,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
             return;
         }
         SyncState state = SyncState.latest(mRealm);
-        DateFormat format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM);
+        DateFormat format = DateFormat.getDateTimeInstance();
         mBinding.toolbar.setSubtitle("Last synced " + (state == null ? "never" : format.format(state.getTimeStamp())));
     }
 
