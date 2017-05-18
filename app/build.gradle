@@ -13,15 +13,23 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+
     dataBinding {
         enabled = true
     }
+
+    signingConfigs {
+        release
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         targetCompatibility 1.8
         sourceCompatibility 1.8
@@ -62,3 +70,12 @@ kapt {
     // Seems to be needed for view bindings
     generateStubs = true
 }
+
+// load signing information based on gradle.properties
+// http://www.thoughtworks.com/insights/blog/signing-open-source-android-apps-without-disclosing-passwords
+def props = new Properties()
+props.load(new FileInputStream(rootProject.file("release.properties")))
+android.signingConfigs.release.keyAlias = props.keyAlias
+android.signingConfigs.release.storeFile = file(props.keyStore)
+android.signingConfigs.release.storePassword = props.keyStorePassword
+android.signingConfigs.release.keyPassword = props.keyAliasPassword

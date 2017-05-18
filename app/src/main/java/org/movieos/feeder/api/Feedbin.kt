@@ -188,7 +188,9 @@ class Feedbin(context: Context) {
                     .registerTypeAdapter(Date::class.java, JavaDateDeserializer())
                     .create()
 
-            val client = OkHttpClient.Builder()
+            val dangerousSocketFactory = dangerousSocketFactory()
+
+            var builder = OkHttpClient.Builder()
                     .cache(Cache(context.cacheDir, CACHE_SIZE_BYTES.toLong()))
                     .addInterceptor { chain ->
                         val request = chain.request().newBuilder()
@@ -196,8 +198,10 @@ class Feedbin(context: Context) {
                                 .build()
                         chain.proceed(request)
                     }
-                    .sslSocketFactory(dangerousSocketFactory()!!)
-                    .build()
+            if (dangerousSocketFactory != null) {
+                builder = builder.sslSocketFactory(dangerousSocketFactory)
+            }
+            val client = builder.build()
 
             val sRetrofit = Retrofit.Builder()
                     .baseUrl("https://api.feedbin.com/v2/")
