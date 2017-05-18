@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 
+import org.jetbrains.annotations.NotNull;
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.DetailFragmentBinding;
 import org.movieos.feeder.model.Entry;
@@ -71,7 +72,7 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
 
     @NonNull
     @Override
-    protected DetailFragmentBinding createBinding(final LayoutInflater inflater, final ViewGroup container) {
+    protected DetailFragmentBinding createBinding(@NotNull final LayoutInflater inflater, @org.jetbrains.annotations.Nullable final ViewGroup container) {
         DetailFragmentBinding binding = DetailFragmentBinding.inflate(inflater, container, false);
 
         binding.toolbar.setNavigationIcon(R.drawable.ic_arrow_back_control_24dp);
@@ -103,10 +104,10 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
     public void onResume() {
         super.onResume();
         updateMenu();
-        if (mBinding != null && getArguments().containsKey(INITIAL_ENTRY)) {
+        if (getBinding() != null && getArguments().containsKey(INITIAL_ENTRY)) {
             int index = mEntryIds.indexOf(getArguments().getInt(INITIAL_ENTRY));
             if (index >= 0 && index < mEntryIds.size()) {
-                mBinding.viewPager.setCurrentItem(index, false);
+                getBinding().viewPager.setCurrentItem(index, false);
             }
             getArguments().remove(INITIAL_ENTRY);
         }
@@ -114,28 +115,28 @@ public class DetailFragment extends DataBindingFragment<DetailFragmentBinding> i
 
     void updateMenu() {
         Timber.i("Updating menu");
-        if (mBinding == null) {
+        if (getBinding() == null) {
             return;
         }
-        Entry entry = Entry.byId(mEntryIds.get(mBinding.viewPager.getCurrentItem()));
+        Entry entry = Entry.Companion.byId(mEntryIds.get(getBinding().viewPager.getCurrentItem()));
 
-        MenuItem starred = mBinding.toolbar.getMenu().findItem(R.id.menu_star);
+        MenuItem starred = getBinding().toolbar.getMenu().findItem(R.id.menu_star);
         Drawable star = ContextCompat.getDrawable(getContext(), entry.isLocallyStarred() ? R.drawable.ic_star_24dp : R.drawable.ic_star_border_24dp);
         star.setTint(0xFFFFFFFF);
         starred.setIcon(star);
 
-        MenuItem unread = mBinding.toolbar.getMenu().findItem(R.id.menu_unread);
+        MenuItem unread = getBinding().toolbar.getMenu().findItem(R.id.menu_unread);
         Drawable circle = ContextCompat.getDrawable(getContext(), entry.isLocallyUnread() ? R.drawable.ic_remove_circle_black_24dp: R.drawable.ic_remove_circle_outline_black_24dp);
         circle.setTint(0xFFFFFFFF);
         unread.setIcon(circle);
 
-        mBinding.toolbar.setOnMenuItemClickListener(item -> {
+        getBinding().toolbar.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case R.id.menu_star:
-                    Entry.setStarred(getContext(), mRealm, entry, !entry.isLocallyStarred());
+                    Entry.Companion.setStarred(getContext(), mRealm, entry, !entry.isLocallyStarred());
                     break;
                 case R.id.menu_unread:
-                    Entry.setUnread(getContext(), mRealm, entry, !entry.isLocallyUnread());
+                    Entry.Companion.setUnread(getContext(), mRealm, entry, !entry.isLocallyUnread());
                     break;
                 case R.id.menu_share:
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);

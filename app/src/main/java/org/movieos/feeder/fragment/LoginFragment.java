@@ -4,6 +4,8 @@ import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.movieos.feeder.R;
 import org.movieos.feeder.api.Feedbin;
 import org.movieos.feeder.databinding.LoginFragmentBinding;
@@ -13,42 +15,42 @@ import okhttp3.Credentials;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import timber.log.Timber;
 
 public class LoginFragment extends DataBindingFragment<LoginFragmentBinding> {
     @NonNull
     @Override
-    protected LoginFragmentBinding createBinding(LayoutInflater inflater, ViewGroup container) {
+    protected LoginFragmentBinding createBinding(@NotNull LayoutInflater inflater, @Nullable ViewGroup container) {
         LoginFragmentBinding binding = LoginFragmentBinding.inflate(inflater, container, false);
 
         binding.button.setOnClickListener(v -> {
-            if (mBinding == null) {
+            if (getBinding() == null) {
                 return;
             }
-            String credentials = Credentials.basic(mBinding.email.getText().toString(), mBinding.password.getText().toString());
 
-            mBinding.button.setEnabled(false);
-            mBinding.passwordWrapper.setError(null);
+            String credentials = Credentials.basic(getBinding().email.getText().toString(), getBinding().password.getText().toString());
 
-            Feedbin.authenticate(getActivity(), credentials, new Callback<Void>() {
+            getBinding().button.setEnabled(false);
+            getBinding().passwordWrapper.setError(null);
+
+            Feedbin.Companion.authenticate(getActivity(), credentials, new Callback<Void>() {
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {
                         if (response.code() == 200) {
-                            Settings.saveCredentials(getActivity(), credentials);
+                            Settings.INSTANCE.saveCredentials(getActivity(), credentials);
                             getFragmentManager().beginTransaction()
                                 .replace(R.id.main_content, new EntriesFragment())
-                                .commitNow();
+                                .commit();
 
                         } else {
-                            mBinding.passwordWrapper.setError("Authentication failed");
-                            mBinding.button.setEnabled(true);
+                            getBinding().passwordWrapper.setError("Authentication failed");
+                            getBinding().button.setEnabled(true);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<Void> call, Throwable t) {
-                        mBinding.passwordWrapper.setError("Network error: " + t.getLocalizedMessage());
-                        mBinding.button.setEnabled(true);
+                        getBinding().passwordWrapper.setError("Network error: " + t.getLocalizedMessage());
+                        getBinding().button.setEnabled(true);
                     }
                 });
         });

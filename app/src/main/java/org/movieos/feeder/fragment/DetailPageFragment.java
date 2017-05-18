@@ -13,6 +13,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import org.jetbrains.annotations.NotNull;
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.DetailPageFragmentBinding;
 import org.movieos.feeder.model.Entry;
@@ -45,14 +46,14 @@ public class DetailPageFragment extends DataBindingFragment<DetailPageFragmentBi
         super.onCreate(savedInstanceState);
         setUserVisibleHint(false);
         Realm realm = Realm.getDefaultInstance();
-        mEntry = Entry.byId(getArguments().getInt(ENTRY_ID));
+        mEntry = Entry.Companion.byId(getArguments().getInt(ENTRY_ID));
         realm.close();
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     @NonNull
     @Override
-    protected DetailPageFragmentBinding createBinding(final LayoutInflater inflater, final ViewGroup container) {
+    protected DetailPageFragmentBinding createBinding(@NotNull final LayoutInflater inflater, @org.jetbrains.annotations.Nullable final ViewGroup container) {
         DetailPageFragmentBinding binding = DetailPageFragmentBinding.inflate(inflater, container, false);
 
         // Needed for youtube embeds to work

@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+import org.jetbrains.annotations.NotNull;
 import org.movieos.feeder.FeederApplication;
 import org.movieos.feeder.R;
 import org.movieos.feeder.databinding.EntriesFragmentBinding;
@@ -41,7 +42,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        FeederApplication.getBus().register(this);
+        FeederApplication.Companion.getBus().register(this);
         mRealm = Realm.getDefaultInstance();
         if (savedInstanceState != null) {
             mViewType = (Entry.ViewType) savedInstanceState.getSerializable(VIEW_TYPE);
@@ -50,14 +51,14 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
             }
         }
 
-        RealmResults<Entry> entries = Entry.entries(mRealm, mViewType);
+        RealmResults<Entry> entries = Entry.Companion.entries(mRealm, mViewType);
 
         mAdapter = new RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding.class, entries) {
             @Override
             public void onBindViewHolder(FeedViewHolder<EntryRowBinding> holder, Entry instance) {
                 holder.getBinding().setEntry(instance);
                 holder.itemView.setOnClickListener(v -> {
-                    Entry.setUnread(getContext(), mRealm, Entry.byId(instance.getId()), false);
+                    Entry.Companion.setUnread(getContext(), mRealm, Entry.Companion.byId(instance.getId()), false);
                     DetailFragment fragment = DetailFragment.create(getIds(), instance.getId());
                     fragment.setTargetFragment(EntriesFragment.this, 0);
                     getFragmentManager()
@@ -68,7 +69,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
                 });
                 holder.getBinding().star.setOnClickListener(v -> {
                     boolean newState = !v.isSelected();
-                    Entry.setStarred(getContext(), mRealm, instance, newState);
+                    Entry.Companion.setStarred(getContext(), mRealm, instance, newState);
                     v.setSelected(newState);
                 });
             }
@@ -85,13 +86,13 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     public void onDestroy() {
         super.onDestroy();
         mRealm.close();
-        FeederApplication.getBus().unregister(this);
+        FeederApplication.Companion.getBus().unregister(this);
     }
 
 
     @NonNull
     @Override
-    protected EntriesFragmentBinding createBinding(final LayoutInflater inflater, final ViewGroup container) {
+    protected EntriesFragmentBinding createBinding(@NotNull final LayoutInflater inflater, @org.jetbrains.annotations.Nullable final ViewGroup container) {
         EntriesFragmentBinding binding = EntriesFragmentBinding.inflate(inflater, container, false);
         binding.setViewType(mViewType);
         binding.recyclerView.setAdapter(mAdapter);
@@ -99,7 +100,7 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
         binding.toolbar.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case R.id.menu_refresh:
-                    SyncTask.sync(getActivity(), true, false);
+                    SyncTask.Companion.sync(getActivity(), true, false);
                     return true;
                 default:
                     return false;
@@ -122,11 +123,11 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
         // To do this we tracked the first and last visible rows before we left (because in this
         // method we're not laid out yet), and will assume this has not changed. If the phone
         // has rotated or resized we'll guess wrong here.
-        if (mBinding != null && mCurrentEntry >= 0 && mFirstBeforePause >= 0 && mLastBeforePause >= 0) {
+        if (getBinding() != null && mCurrentEntry >= 0 && mFirstBeforePause >= 0 && mLastBeforePause >= 0) {
             if (mCurrentEntry < mFirstBeforePause) {
-                mBinding.recyclerView.scrollToPosition(mCurrentEntry);
+                getBinding().recyclerView.scrollToPosition(mCurrentEntry);
             } else if (mCurrentEntry > mLastBeforePause) {
-                mBinding.recyclerView.scrollToPosition(mCurrentEntry - (mLastBeforePause - mFirstBeforePause));
+                getBinding().recyclerView.scrollToPosition(mCurrentEntry - (mLastBeforePause - mFirstBeforePause));
             }
             mCurrentEntry = -1;
         }
@@ -135,8 +136,8 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     @Override
     public void onPause() {
         super.onPause();
-        if (mBinding != null) {
-            LinearLayoutManager manager = (LinearLayoutManager) mBinding.recyclerView.getLayoutManager();
+        if (getBinding() != null) {
+            LinearLayoutManager manager = (LinearLayoutManager) getBinding().recyclerView.getLayoutManager();
             mFirstBeforePause = manager.findFirstCompletelyVisibleItemPosition();
             mLastBeforePause = manager.findLastCompletelyVisibleItemPosition();
         }
@@ -145,13 +146,13 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     @SuppressWarnings("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void syncStatus(SyncTask.SyncStatus status) {
-        if (mBinding == null) {
+        if (getBinding() == null) {
             return;
         }
         if (status.isComplete()) {
             displaySyncTime();
         } else {
-            mBinding.toolbar.setSubtitle(status.getStatus());
+            getBinding().toolbar.setSubtitle(status.getStatus());
         }
         if (status.getException() != null && isResumed()) {
             new AlertDialog.Builder(getActivity())
@@ -162,20 +163,20 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
     }
 
     private void displaySyncTime() {
-        if (mBinding == null) {
+        if (getBinding() == null) {
             return;
         }
-        SyncState state = SyncState.latest(mRealm);
+        SyncState state = SyncState.Companion.latest(mRealm);
         DateFormat format = DateFormat.getDateTimeInstance();
-        mBinding.toolbar.setSubtitle("Last synced " + (state == null ? "never" : format.format(state.getTimeStamp())));
+        getBinding().toolbar.setSubtitle("Last synced " + (state == null ? "never" : format.format(state.getTimeStamp())));
     }
 
 
     public void childDisplayedEntryId(int entryId) {
         Timber.i("childDiplayedEntryId " + entryId);
-        Entry entry = Entry.byId(entryId);
+        Entry entry = Entry.Companion.byId(entryId);
         if (entry != null && entry.isLocallyUnread()) {
-            Entry.setUnread(getContext(), mRealm, entry, false);
+            Entry.Companion.setUnread(getContext(), mRealm, entry, false);
         }
 //        if (mBinding != null) {
 //            mBinding.recyclerView.scrollToPosition();
@@ -186,10 +187,10 @@ public class EntriesFragment extends DataBindingFragment<EntriesFragmentBinding>
 
     private void setViewType(@NonNull Entry.ViewType viewType) {
         mViewType = viewType;
-        if (mBinding != null) {
-            mBinding.setViewType(mViewType);
+        if (getBinding() != null) {
+            getBinding().setViewType(mViewType);
         }
-        mAdapter.setQuery(Entry.entries(mRealm, mViewType));
+        mAdapter.setQuery(Entry.Companion.entries(mRealm, mViewType));
     }
 
 
