@@ -47,7 +47,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         adapter = object : RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding::class.java, entries) {
             override fun onBindViewHolder(holder: RealmAdapter.FeedViewHolder<EntryRowBinding>, instance: Entry) {
                 holder.binding.entry = instance
-                holder.itemView.setOnClickListener { v ->
+                holder.itemView.setOnClickListener {
                     Entry.setUnread(context, realm, Entry.byId(realm, instance.id)!!, false)
                     val fragment = DetailFragment.create(ids, instance.id)
                     fragment.setTargetFragment(this@EntriesFragment, 0)
@@ -92,9 +92,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             true
         }
 
-        binding.stateUnread.setOnClickListener { v -> setViewType(Entry.ViewType.UNREAD) }
-        binding.stateStarred.setOnClickListener { v -> setViewType(Entry.ViewType.STARRED) }
-        binding.stateAll.setOnClickListener { v -> setViewType(Entry.ViewType.ALL) }
+        binding.stateUnread.setOnClickListener { setViewType(Entry.ViewType.UNREAD) }
+        binding.stateStarred.setOnClickListener { setViewType(Entry.ViewType.STARRED) }
+        binding.stateAll.setOnClickListener { setViewType(Entry.ViewType.ALL) }
 
         return binding
     }
@@ -137,7 +137,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         if (status.exception != null && isResumed) {
             AlertDialog.Builder(activity)
                     .setMessage(status.exception!!.localizedMessage)
-                    .setPositiveButton("OK") { dialog, which -> dialog.dismiss() }
+                    .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
                     .show()
         }
     }
