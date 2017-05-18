@@ -14,15 +14,13 @@ abstract class DataBindingFragment<B : ViewDataBinding> : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = createBinding(inflater, container)
-        return binding!!.root
+        return binding?.root
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        if (binding != null) {
-            binding!!.unbind()
-            binding = null
-        }
+        binding?.unbind()
+        binding = null
     }
 
     protected abstract fun createBinding(inflater: LayoutInflater, container: ViewGroup?): B

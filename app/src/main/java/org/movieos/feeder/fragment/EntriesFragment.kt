@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.ViewGroup
 import io.realm.Realm
+import io.realm.RealmResults
+import io.realm.Sort
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.movieos.feeder.FeederApplication
@@ -40,7 +42,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             }
         }
 
-        val entries = Entry.entries(realm, viewType)
+        val entries = entries(realm, viewType)
 
         adapter = object : RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding::class.java, entries) {
             override fun onBindViewHolder(holder: RealmAdapter.FeedViewHolder<EntryRowBinding>, instance: Entry) {
@@ -124,15 +126,13 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         }
     }
 
+    @Suppress("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun syncStatus(status: SyncTask.SyncStatus) {
-        if (binding == null) {
-            return
-        }
         if (status.isComplete) {
             displaySyncTime()
         } else {
-            binding!!.toolbar.subtitle = status.status
+            binding?.toolbar?.subtitle = status.status
         }
         if (status.exception != null && isResumed) {
             AlertDialog.Builder(activity)
@@ -152,21 +152,28 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     fun childDisplayedEntryId(entryId: Int) {
         Timber.i("childDiplayedEntryId " + entryId)
         val entry = Entry.byId(realm, entryId)
-        if (entry != null && entry.locallyUnread) {
+        if (entry != null && entry.locallyUnread && context != null) {
             Entry.setUnread(context, realm, entry, false)
         }
-        //        if (mBinding != null) {
-        //            mBinding.recyclerView.scrollToPosition();
-        //        } else {
-        //            mCurrentEntry = position;
-        //        }
     }
 
     private fun setViewType(viewType: Entry.ViewType) {
         this.viewType = viewType
         binding?.viewType = this.viewType
-        adapter?.setQuery(Entry.entries(realm, this.viewType))
+        adapter?.setQuery(entries(realm, this.viewType))
     }
+
+    fun entries(realm: Realm, viewType: Entry.ViewType): RealmResults<Entry> {
+        when (viewType) {
+            Entry.ViewType.UNREAD ->
+                return realm.where(Entry::class.java).equalTo("unreadFromServer", true).findAllSorted("published", Sort.DESCENDING)
+            Entry.ViewType.STARRED ->
+                return realm.where(Entry::class.java).equalTo("starredFromServer", true).findAllSorted("published", Sort.DESCENDING)
+            Entry.ViewType.ALL ->
+                return realm.where(Entry::class.java).findAllSorted("createdAt", Sort.DESCENDING)
+        }
+    }
+
 
     companion object {
 

@@ -20,6 +20,7 @@ abstract class RealmAdapter<T, B>(
 where T : RealmObject, T : IntegerPrimaryKey, B : ViewDataBinding {
 
     init {
+        @Suppress("LeakingThis")
         setHasStableIds(true)
     }
 
@@ -31,10 +32,10 @@ where T : RealmObject, T : IntegerPrimaryKey, B : ViewDataBinding {
         }
     }
 
-    fun setQuery(query: RealmResults<T>) {
-        this.query.removeChangeListener(this)
-        query.addChangeListener(this)
-        this.query = query
+    fun setQuery(newQuery: RealmResults<T>) {
+        query.removeChangeListener(this)
+        newQuery.addChangeListener(this)
+        query = newQuery
         notifyDataSetChanged()
     }
 

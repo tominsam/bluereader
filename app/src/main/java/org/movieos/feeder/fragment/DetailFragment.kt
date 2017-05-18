@@ -11,33 +11,30 @@ import android.view.View
 import android.view.ViewGroup
 import io.realm.Realm
 import io.realm.RealmChangeListener
-import io.realm.RealmResults
 import org.movieos.feeder.R
 import org.movieos.feeder.databinding.DetailFragmentBinding
 import org.movieos.feeder.model.Entry
-import timber.log.Timber
-import java.util.*
 
-class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChangeListener<RealmResults<Entry>> {
+class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChangeListener<Realm> {
 
     internal var adapter: FragmentStatePagerAdapter? = null
-    private var realm: Realm? = null
-    private var entryIds: List<Int>? = null
+    private val realm = Realm.getDefaultInstance()
+    private var entryIds: List<Int> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        realm = Realm.getDefaultInstance()
-        entryIds = arguments.getIntegerArrayList(ENTRY_IDS)
+        entryIds = arguments.getIntegerArrayList(ENTRY_IDS) ?: ArrayList()
+
         // Watch all realm objects for changes
-        realm!!.where(Entry::class.java).findAll().addChangeListener(this)
+        realm.addChangeListener(this)
 
         adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
             override fun getItem(position: Int): Fragment {
-                return DetailPageFragment.create(entryIds!![position])
+                return DetailPageFragment.create(entryIds[position])
             }
 
             override fun getCount(): Int {
-                return entryIds!!.size
+                return entryIds.size
             }
         }
     }
@@ -45,7 +42,6 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
     override fun onDestroy() {
         super.onDestroy()
         realm?.close()
-        realm = null
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): DetailFragmentBinding {
@@ -62,7 +58,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
             override fun onPageSelected(position: Int) {
                 updateMenu()
                 if (targetFragment is EntriesFragment) {
-                    (targetFragment as EntriesFragment).childDisplayedEntryId(entryIds!![position])
+                    (targetFragment as EntriesFragment).childDisplayedEntryId(entryIds[position])
                 }
             }
 
@@ -74,20 +70,17 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
     override fun onResume() {
         super.onResume()
         updateMenu()
-        if (binding != null && arguments.containsKey(INITIAL_ENTRY)) {
-            val index = entryIds!!.indexOf(arguments.getInt(INITIAL_ENTRY))
-            if (index >= 0 && index < entryIds!!.size) {
-                binding!!.viewPager.setCurrentItem(index, false)
+        if (arguments.containsKey(INITIAL_ENTRY)) {
+            val index = entryIds.indexOf(arguments.getInt(INITIAL_ENTRY))
+            if (index >= 0 && index < entryIds.size) {
+                binding?.viewPager?.setCurrentItem(index, false)
             }
             arguments.remove(INITIAL_ENTRY)
         }
     }
 
     internal fun updateMenu() {
-        Timber.i("Updating menu")
         val binding = binding ?: return
-        val realm = realm ?: return
-        val entryIds = entryIds ?: return
         val entry = Entry.byId(realm, entryIds[binding.viewPager.currentItem]) ?: return
 
         val starred = binding.toolbar.menu.findItem(R.id.menu_star)
@@ -116,7 +109,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
         }
     }
 
-    override fun onChange(element: RealmResults<Entry>) {
+    override fun onChange(element: Realm?) {
         updateMenu()
     }
 

@@ -35,11 +35,11 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): DetailPageFragmentBinding {
         val binding = DetailPageFragmentBinding.inflate(inflater, container, false)
 
+        // Try to minimize saved state
+        binding.webView.isSaveEnabled = false
         // Needed for youtube embeds to work
         binding.webView.settings.javaScriptEnabled = true
-        binding.webView.setWebChromeClient(object : WebChromeClient() {
-
-        })
+        binding.webView.setWebChromeClient(object : WebChromeClient() {})
         binding.webView.setWebViewClient(object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val builder = CustomTabsIntent.Builder()

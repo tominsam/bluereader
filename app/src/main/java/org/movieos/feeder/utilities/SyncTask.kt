@@ -172,10 +172,8 @@ class SyncTask private constructor(internal val context: Context, internal val p
         publishProgress("Syncing entries")
         val latestEntry = realm.where(Entry::class.java).findAllSorted("createdAt", Sort.DESCENDING).first(null)
         var entriesSince: Date? = latestEntry?.createdAt
-        if (Entry.entries(realm, Entry.ViewType.ALL).size < MAX_ENTRIES_COUNT) {
-            // ignore the incremental sync stuff until we have at least
-            // this many entries - this fixes the problem if the first sync
-            // fails.
+        if (SyncState.latest(realm) == null) {
+            // ignore the incremental sync stuff until we have at least one successful sync
             entriesSince = null
         }
         var entries = api.entries(entriesSince).execute()
