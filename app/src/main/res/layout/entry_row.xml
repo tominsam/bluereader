@@ -31,7 +31,7 @@
             android:text="@{entry.title}"
             android:textAppearance="@style/text_title"
             android:textColor="@color/primary_text"
-            app:bold="@{entry.isLocallyUnread}"
+            app:bold="@{entry.locallyUnread}"
             tools:text="Entry title"
             />
 
@@ -75,7 +75,7 @@
             android:minWidth="48dp"
             android:src="@drawable/selectable_starred"
             android:tint="@color/star_statelist"
-            app:selected="@{entry.isLocallyStarred}"
+            app:selected="@{entry.locallyStarred}"
             />
 
     </RelativeLayout>

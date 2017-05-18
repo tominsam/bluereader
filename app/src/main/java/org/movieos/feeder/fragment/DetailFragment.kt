@@ -7,7 +7,6 @@ import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.content.ContextCompat
 import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import io.realm.Realm
@@ -45,7 +44,8 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
 
     override fun onDestroy() {
         super.onDestroy()
-        realm!!.close()
+        realm?.close()
+        realm = null
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): DetailFragmentBinding {
@@ -85,25 +85,25 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
 
     internal fun updateMenu() {
         Timber.i("Updating menu")
-        if (binding == null) {
-            return
-        }
-        val entry = Entry.byId(entryIds!![binding!!.viewPager.currentItem])
+        val binding = binding ?: return
+        val realm = realm ?: return
+        val entryIds = entryIds ?: return
+        val entry = Entry.byId(realm, entryIds[binding.viewPager.currentItem]) ?: return
 
-        val starred = binding!!.toolbar.menu.findItem(R.id.menu_star)
-        val star = ContextCompat.getDrawable(context, if (entry!!.isLocallyStarred) R.drawable.ic_star_24dp else R.drawable.ic_star_border_24dp)
+        val starred = binding.toolbar.menu.findItem(R.id.menu_star)
+        val star = ContextCompat.getDrawable(context, if (entry.locallyStarred) R.drawable.ic_star_24dp else R.drawable.ic_star_border_24dp)
         star.setTint(0xFFFFFFFF.toInt())
         starred.icon = star
 
-        val unread = binding!!.toolbar.menu.findItem(R.id.menu_unread)
-        val circle = ContextCompat.getDrawable(context, if (entry.isLocallyUnread) R.drawable.ic_remove_circle_black_24dp else R.drawable.ic_remove_circle_outline_black_24dp)
+        val unread = binding.toolbar.menu.findItem(R.id.menu_unread)
+        val circle = ContextCompat.getDrawable(context, if (entry.locallyUnread) R.drawable.ic_remove_circle_black_24dp else R.drawable.ic_remove_circle_outline_black_24dp)
         circle.setTint(0xFFFFFFFF.toInt())
         unread.icon = circle
 
-        binding!!.toolbar.setOnMenuItemClickListener { item: MenuItem ->
-            when (item.itemId) {
-                R.id.menu_star -> Entry.setStarred(context, realm!!, entry, !entry.isLocallyStarred)
-                R.id.menu_unread -> Entry.setUnread(context, realm!!, entry, !entry.isLocallyUnread)
+        binding.toolbar.setOnMenuItemClickListener {
+            when (it.itemId) {
+                R.id.menu_star -> Entry.setStarred(context, realm, entry, !entry.locallyStarred)
+                R.id.menu_unread -> Entry.setUnread(context, realm, entry, !entry.locallyUnread)
                 R.id.menu_share -> {
                     val shareIntent = Intent(Intent.ACTION_SEND)
                     shareIntent.type = "text/plain"
@@ -114,7 +114,6 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
             }
             true
         }
-
     }
 
     override fun onChange(element: RealmResults<Entry>) {

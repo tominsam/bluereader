@@ -104,32 +104,32 @@ class SyncTask private constructor(internal val context: Context, internal val p
 
         if (!addStarred.isEmpty()) {
             api.addStarred(addStarred).execute()
-            realm.executeTransaction {
-                for (entry in realm.where(Entry::class.java).`in`("id", addStarred.toTypedArray()).findAll()) {
+            realm.executeTransaction { r ->
+                for (entry in r.where(Entry::class.java).`in`("id", addStarred.toTypedArray()).findAll()) {
                     entry.starredFromServer = true
                 }
             }
         }
         if (!removeStarred.isEmpty()) {
             api.removeStarred(removeStarred).execute()
-            realm.executeTransaction {
-                for (entry in realm.where(Entry::class.java).`in`("id", removeStarred.toTypedArray()).findAll()) {
+            realm.executeTransaction { r ->
+                for (entry in r.where(Entry::class.java).`in`("id", removeStarred.toTypedArray()).findAll()) {
                     entry.starredFromServer = false
                 }
             }
         }
         if (!addUnread.isEmpty()) {
             api.addUnread(addUnread).execute()
-            realm.executeTransaction {
-                for (entry in realm.where(Entry::class.java).`in`("id", addUnread.toTypedArray()).findAll()) {
+            realm.executeTransaction { r ->
+                for (entry in r.where(Entry::class.java).`in`("id", addUnread.toTypedArray()).findAll()) {
                     entry.unreadFromServer = true
                 }
             }
         }
         if (!removeUnread.isEmpty()) {
             api.removeUnread(removeUnread).execute()
-            realm.executeTransaction {
-                for (entry in realm.where(Entry::class.java).`in`("id", removeUnread.toTypedArray()).findAll()) {
+            realm.executeTransaction { r ->
+                for (entry in r.where(Entry::class.java).`in`("id", removeUnread.toTypedArray()).findAll()) {
                     entry.unreadFromServer = false
                 }
             }
@@ -212,12 +212,12 @@ class SyncTask private constructor(internal val context: Context, internal val p
         // fetch those explicitly.
         var missing: List<Int> = ArrayList()
         for (integer in unread) {
-            if (Entry.byId(integer) == null) {
+            if (Entry.byId(realm, integer) == null) {
                 missing += integer
             }
         }
         for (integer in starred) {
-            if (Entry.byId(integer) == null) {
+            if (Entry.byId(realm, integer) == null) {
                 missing += integer
             }
         }

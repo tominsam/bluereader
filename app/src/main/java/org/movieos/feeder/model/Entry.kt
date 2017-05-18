@@ -78,7 +78,7 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
             }
         }
 
-    val isLocallyStarred: Boolean
+    val locallyStarred: Boolean
         get() {
             Realm.getDefaultInstance().use { r ->
                 var localStarred = starredFromServer
@@ -89,7 +89,7 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
             }
         }
 
-    val isLocallyUnread: Boolean
+    val locallyUnread: Boolean
         get() {
             Realm.getDefaultInstance().use { r ->
                 var localUnread = unreadFromServer
@@ -106,10 +106,8 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
 
     companion object {
 
-        fun byId(id: Int): Entry? {
-            Realm.getDefaultInstance().use { realm ->
-                return realm.where(Entry::class.java).equalTo("id", id).findFirst()
-            }
+        fun byId(realm: Realm, id: Int): Entry? {
+            return realm.where(Entry::class.java).equalTo("id", id).findFirst()
         }
 
         fun entries(realm: Realm, viewType: ViewType): RealmResults<Entry> {
@@ -125,20 +123,20 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
 
         fun setStarred(context: Context, realm: Realm, entry: Entry, starred: Boolean) {
             val id = entry.id
-            realm.executeTransactionAsync {
-                realm.copyToRealm(LocalState(id, null, starred))
+            realm.executeTransactionAsync { r ->
+                r.copyToRealm(LocalState(id, null, starred))
                 // Arbitrary object change to kick UI
-                byId(id)?.locallyUpdated = Date()
+                byId(r, id)?.locallyUpdated = Date()
             }
             Handler().postDelayed({ SyncTask.sync(context, false, true) }, 5000)
         }
 
         fun setUnread(context: Context, realm: Realm, entry: Entry, unread: Boolean) {
             val id = entry.id
-            realm.executeTransactionAsync {
-                realm.copyToRealm(LocalState(id, unread, null))
+            realm.executeTransactionAsync { r ->
+                r.copyToRealm(LocalState(id, unread, null))
                 // Arbitrary object change to kick UI
-                byId(id)?.locallyUpdated = Date()
+                byId(r, id)?.locallyUpdated = Date()
             }
             Handler().postDelayed({ SyncTask.sync(context, false, true) }, 5000)
         }

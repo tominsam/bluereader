@@ -27,7 +27,7 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         super.onCreate(savedInstanceState)
         userVisibleHint = false
         val realm = Realm.getDefaultInstance()
-        entry = Entry.byId(arguments.getInt(ENTRY_ID))
+        entry = Entry.byId(realm, arguments.getInt(ENTRY_ID))
         realm.close()
     }
 
@@ -93,7 +93,7 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         }
 
         entry?.let { e ->
-            if (isVisible && e.isLocallyUnread) {
+            if (isVisible && e.locallyUnread) {
                 val realm = Realm.getDefaultInstance()
                 //Entry.setUnread(getContext(), realm, mEntry, false);
                 realm.close()

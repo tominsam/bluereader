@@ -24,7 +24,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     internal var adapter: RealmAdapter<Entry, EntryRowBinding>? = null
     internal var currentEntry = -1
-    private var realm: Realm? = null
+    private val realm: Realm = Realm.getDefaultInstance()
     private var firstBeforePause: Int = 0
     private var lastBeforePause: Int = 0
 
@@ -33,7 +33,6 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FeederApplication.bus.register(this)
-        realm = Realm.getDefaultInstance()
         if (savedInstanceState != null) {
             val viewType = savedInstanceState.getSerializable(VIEW_TYPE) as Entry.ViewType?
             if (viewType != null) {
@@ -41,13 +40,13 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             }
         }
 
-        val entries = Entry.entries(realm!!, viewType)
+        val entries = Entry.entries(realm, viewType)
 
         adapter = object : RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding::class.java, entries) {
             override fun onBindViewHolder(holder: RealmAdapter.FeedViewHolder<EntryRowBinding>, instance: Entry) {
                 holder.binding.entry = instance
                 holder.itemView.setOnClickListener { v ->
-                    Entry.setUnread(context, realm!!, Entry.byId(instance.id)!!, false)
+                    Entry.setUnread(context, realm, Entry.byId(realm, instance.id)!!, false)
                     val fragment = DetailFragment.create(ids, instance.id)
                     fragment.setTargetFragment(this@EntriesFragment, 0)
                     fragmentManager
@@ -58,7 +57,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 }
                 holder.binding.star.setOnClickListener { v ->
                     val newState = !v.isSelected
-                    Entry.setStarred(context, realm!!, instance, newState)
+                    Entry.setStarred(context, realm, instance, newState)
                     v.isSelected = newState
                 }
             }
@@ -72,7 +71,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     override fun onDestroy() {
         super.onDestroy()
-        realm!!.close()
+        realm.close()
         FeederApplication.bus.unregister(this)
     }
 
@@ -144,7 +143,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     private fun displaySyncTime() {
-        val state = SyncState.latest(realm!!)
+        val state = SyncState.latest(realm)
         val format = DateFormat.getDateTimeInstance()
         binding?.toolbar?.subtitle = "Last synced " + if (state == null) "never" else format.format(state.timeStamp)
     }
@@ -152,9 +151,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     fun childDisplayedEntryId(entryId: Int) {
         Timber.i("childDiplayedEntryId " + entryId)
-        val entry = Entry.byId(entryId)
-        if (entry != null && entry.isLocallyUnread) {
-            Entry.setUnread(context, realm!!, entry, false)
+        val entry = Entry.byId(realm, entryId)
+        if (entry != null && entry.locallyUnread) {
+            Entry.setUnread(context, realm, entry, false)
         }
         //        if (mBinding != null) {
         //            mBinding.recyclerView.scrollToPosition();
@@ -166,7 +165,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     private fun setViewType(viewType: Entry.ViewType) {
         this.viewType = viewType
         binding?.viewType = this.viewType
-        adapter?.setQuery(Entry.entries(realm!!, this.viewType))
+        adapter?.setQuery(Entry.entries(realm, this.viewType))
     }
 
     companion object {
