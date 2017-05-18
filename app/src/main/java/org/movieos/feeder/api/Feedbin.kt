@@ -31,38 +31,34 @@ import javax.net.ssl.X509TrustManager
 
 class Feedbin(context: Context) {
 
-    private var mApi: RawApi
+    private var api: RawApi
 
     init {
-        mApi = api(context, Settings.getCredentials(context))
+        api = api(context, Settings.getCredentials(context))
     }
 
     fun subscriptions(since: Date?): Call<List<Subscription>> {
-        return mApi.subscriptions(formatDate(since))
-    }
-
-    fun subscriptionsPaginate(next: String): Call<List<Subscription>> {
-        return mApi.subscriptionsPaginate(next)
+        return api.subscriptions(formatDate(since))
     }
 
     fun entries(since: Date?): Call<List<Entry>> {
-        return mApi.entries(formatDate(since))
+        return api.entries(formatDate(since))
     }
 
     fun entriesPaginate(url: String): Call<List<Entry>> {
-        return mApi.entriesPaginate(url)
+        return api.entriesPaginate(url)
     }
 
     fun starred(): Call<List<Int>> {
-        return mApi.starred()
+        return api.starred()
     }
 
     fun unread(): Call<List<Int>> {
-        return mApi.unread()
+        return api.unread()
     }
 
     fun taggings(): Call<List<Tagging>> {
-        return mApi.taggings()
+        return api.taggings()
     }
 
     fun addStarred(ids: Iterable<Int>): Call<Void> {
@@ -72,7 +68,7 @@ class Feedbin(context: Context) {
             jsonIds.add(id)
         }
         base.add("starred_entries", jsonIds)
-        return mApi.addStarred(base)
+        return api.addStarred(base)
     }
 
     fun removeStarred(ids: Iterable<Int>): Call<Void> {
@@ -82,7 +78,7 @@ class Feedbin(context: Context) {
             jsonIds.add(id)
         }
         base.add("starred_entries", jsonIds)
-        return mApi.removeStarred(base)
+        return api.removeStarred(base)
     }
 
     fun addUnread(ids: Iterable<Int>): Call<Void> {
@@ -92,7 +88,7 @@ class Feedbin(context: Context) {
             jsonIds.add(id)
         }
         base.add("unread_entries", jsonIds)
-        return mApi.addUnread(base)
+        return api.addUnread(base)
     }
 
     fun removeUnread(ids: Iterable<Int>): Call<Void> {
@@ -102,11 +98,11 @@ class Feedbin(context: Context) {
             jsonIds.add(id)
         }
         base.add("unread_entries", jsonIds)
-        return mApi.removeUnread(base)
+        return api.removeUnread(base)
     }
 
     fun entries(ids: List<Int>): Call<List<Entry>> {
-        return mApi.entriesById(TextUtils.join(",", ids))
+        return api.entriesById(TextUtils.join(",", ids))
     }
 
     private interface RawApi {

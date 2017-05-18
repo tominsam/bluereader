@@ -31,7 +31,7 @@
             android:text="@{entry.title}"
             android:textAppearance="@style/text_title"
             android:textColor="@color/primary_text"
-            app:bold="@{entry.locallyUnread}"
+            app:bold="@{entry.isLocallyUnread}"
             tools:text="Entry title"
             />
 

@@ -13,35 +13,36 @@ import org.movieos.feeder.model.IntegerPrimaryKey
 import java.lang.reflect.InvocationTargetException
 
 
-abstract class RealmAdapter<T, B>(
-        internal var mKlass: Class<B>,
-        internal var mQuery: RealmResults<T>
-) : RecyclerView.Adapter<RealmAdapter.FeedViewHolder<B>>(),
-        OrderedRealmCollectionChangeListener<RealmResults<T>>
+abstract class RealmAdapter<T, B> : RecyclerView.Adapter<RealmAdapter.FeedViewHolder<B>>, OrderedRealmCollectionChangeListener<RealmResults<T>>
 where T : RealmObject, T : IntegerPrimaryKey, B : ViewDataBinding {
 
-    init {
+    internal val klass: Class<B>
+    internal var query: RealmResults<T>
+
+    constructor(klass: Class<B>, query: RealmResults<T>) : super() {
+        this.klass = klass
+        this.query = query
         setHasStableIds(true)
     }
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
-        mQuery.addChangeListener(this)
+        query.addChangeListener(this)
         if (recyclerView.layoutManager == null) {
             recyclerView.layoutManager = LinearLayoutManager(recyclerView.context)
         }
     }
 
     fun setQuery(query: RealmResults<T>) {
-        mQuery.removeChangeListener(this)
+        this.query.removeChangeListener(this)
         query.addChangeListener(this)
-        mQuery = query
+        this.query = query
         notifyDataSetChanged()
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView?) {
         super.onDetachedFromRecyclerView(recyclerView)
-        mQuery.removeChangeListener(this)
+        query.removeChangeListener(this)
     }
 
     override fun onChange(collection: RealmResults<T>, changeSet: OrderedCollectionChangeSet) {
@@ -49,33 +50,34 @@ where T : RealmObject, T : IntegerPrimaryKey, B : ViewDataBinding {
     }
 
     override fun getItemCount(): Int {
-        return mQuery.size
+        return query.size
     }
 
     override fun getItemId(position: Int): Long {
-        return mQuery[position].id.toLong()
+        return query[position].id.toLong()
     }
 
     val ids: List<Int>
-        get() = mQuery.map { t -> t.id }
+        get() = query.map { t -> t.id }
 
+    @Suppress("UNCHECKED_CAST")
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedViewHolder<B> {
         val inflater = LayoutInflater.from(parent.context)
         try {
-            val binding = mKlass.getMethod("inflate", LayoutInflater::class.java, ViewGroup::class.java, Boolean::class.javaPrimitiveType).invoke(null, inflater, parent, false) as B
+            val binding = klass.getMethod("inflate", LayoutInflater::class.java, ViewGroup::class.java, Boolean::class.javaPrimitiveType).invoke(null, inflater, parent, false) as B
             return FeedViewHolder(binding)
         } catch (e: IllegalAccessException) {
-            throw RuntimeException("Failed to instantiate " + mKlass, e)
+            throw RuntimeException("Failed to instantiate " + klass, e)
         } catch (e: NoSuchMethodException) {
-            throw RuntimeException("Failed to instantiate " + mKlass, e)
+            throw RuntimeException("Failed to instantiate " + klass, e)
         } catch (e: InvocationTargetException) {
-            throw RuntimeException("Failed to instantiate " + mKlass, e)
+            throw RuntimeException("Failed to instantiate " + klass, e)
         }
 
     }
 
     override fun onBindViewHolder(holder: FeedViewHolder<B>, position: Int) {
-        val instance = mQuery[position]
+        val instance = query[position]
         onBindViewHolder(holder, instance)
     }
 

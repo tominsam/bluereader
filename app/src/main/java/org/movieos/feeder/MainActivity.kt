@@ -1,7 +1,6 @@
 package org.movieos.feeder
 
 import android.os.Bundle
-import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.webkit.WebView
 import io.realm.Realm
@@ -12,8 +11,6 @@ import org.movieos.feeder.utilities.Settings
 import org.movieos.feeder.utilities.SyncTask
 
 class MainActivity : AppCompatActivity() {
-
-    internal var mSnackbar: Snackbar? = null
 
     // control the lifetime of the realm object
     internal var realm: Realm? = null

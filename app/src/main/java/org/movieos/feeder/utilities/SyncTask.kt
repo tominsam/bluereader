@@ -18,7 +18,15 @@ import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-class SyncTask private constructor(internal var mContext: Context, internal var mPushOnly: Boolean) : AsyncTask<Void, String, SyncTask.SyncStatus>() {
+class SyncTask : AsyncTask<Void, String, SyncTask.SyncStatus> {
+
+    internal var context: Context
+    internal var pushOnly: Boolean
+
+    private constructor(context: Context, pushOnly: Boolean) : super() {
+        this.context = context
+        this.pushOnly = pushOnly
+    }
 
     private fun start() {
         executeOnExecutor(SYNC_EXECUTOR)
@@ -26,13 +34,13 @@ class SyncTask private constructor(internal var mContext: Context, internal var 
 
     override fun doInBackground(vararg params: Void): SyncStatus {
         onProgressUpdate("Syncing...")
-        val api = Feedbin(mContext)
+        val api = Feedbin(context)
         val realm = Realm.getDefaultInstance()
         try {
             // Push state. We store the date we pushed up until.
             pushState(api, realm)
 
-            if (!mPushOnly) {
+            if (!pushOnly) {
                 // Pull server state
                 getSubscriptions(api, realm)
                 getTaggings(api, realm)
@@ -44,7 +52,7 @@ class SyncTask private constructor(internal var mContext: Context, internal var 
 
         } catch (e: Throwable) {
             Timber.e(e)
-            if (mPushOnly) {
+            if (pushOnly) {
                 return SyncStatus(true, "Failed")
             } else {
                 return SyncStatus(e)
@@ -147,9 +155,9 @@ class SyncTask private constructor(internal var mContext: Context, internal var 
     @Throws(IOException::class)
     private fun getSubscriptions(api: Feedbin, realm: Realm) {
         publishProgress("Syncing subscriptions")
-        val latestSubscription = realm.where(Subscription::class.java).findAllSorted("createdAt", Sort.DESCENDING).first(null)
-        val subscriptionsSince = latestSubscription?.createdAt
-        val subscriptions = api.subscriptions(subscriptionsSince).execute()
+//        val latestSubscription = realm.where(Subscription::class.java).findAllSorted("createdAt", Sort.DESCENDING).first(null)
+//        val subscriptionsSince = latestSubscription?.createdAt
+        val subscriptions = api.subscriptions(null).execute()
         realm.executeTransaction { r -> r.copyToRealmOrUpdate(subscriptions.body()) }
     }
 
