@@ -14,6 +14,7 @@ import io.realm.RealmChangeListener
 import org.movieos.feeder.R
 import org.movieos.feeder.databinding.DetailFragmentBinding
 import org.movieos.feeder.model.Entry
+import org.movieos.feeder.utilities.Web
 
 class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChangeListener<Realm> {
 
@@ -97,6 +98,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
             when (it.itemId) {
                 R.id.menu_star -> Entry.setStarred(context, realm, entry, !entry.locallyStarred)
                 R.id.menu_unread -> Entry.setUnread(context, realm, entry, !entry.locallyUnread)
+                R.id.menu_open -> Web.Companion.openInBrowser(activity, entry.url!!)
                 R.id.menu_share -> {
                     val shareIntent = Intent(Intent.ACTION_SEND)
                     shareIntent.type = "text/plain"

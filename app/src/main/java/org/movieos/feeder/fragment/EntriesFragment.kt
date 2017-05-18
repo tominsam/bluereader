@@ -96,6 +96,11 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         binding.stateStarred.setOnClickListener { setViewType(Entry.ViewType.STARRED) }
         binding.stateAll.setOnClickListener { setViewType(Entry.ViewType.ALL) }
 
+        if (SyncState.latest(realm) == null) {
+            // first run / first sync
+            SyncTask.sync(activity, true, false)
+        }
+
         return binding
     }
 
