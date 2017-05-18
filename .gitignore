@@ -8,3 +8,6 @@
 /captures
 .externalNativeBuild
 default.realm*
+release.keystore
+release.properties
+/*~
