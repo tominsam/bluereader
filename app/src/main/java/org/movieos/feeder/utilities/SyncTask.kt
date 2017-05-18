@@ -39,7 +39,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
                 getEntries(api, realm)
 
                 // update last sync date to be "now"
-                realm.executeTransaction { r -> r.copyToRealmOrUpdate(SyncState(1, Date())) }
+                realm.executeTransaction { it.copyToRealmOrUpdate(SyncState(1, Date())) }
             }
 
         } catch (e: Throwable) {
@@ -150,14 +150,14 @@ class SyncTask private constructor(internal val context: Context, internal val p
 //        val latestSubscription = realm.where(Subscription::class.java).findAllSorted("createdAt", Sort.DESCENDING).first(null)
 //        val subscriptionsSince = latestSubscription?.createdAt
         val subscriptions = api.subscriptions(null).execute()
-        realm.executeTransaction { r -> r.copyToRealmOrUpdate(subscriptions.body()) }
+        realm.executeTransaction { it.copyToRealmOrUpdate(subscriptions.body()) }
     }
 
     @Throws(IOException::class)
     private fun getTaggings(api: Feedbin, realm: Realm) {
         publishProgress("Syncing tags")
         val taggings = api.taggings().execute()
-        realm.executeTransaction { r -> r.copyToRealmOrUpdate(taggings.body()) }
+        realm.executeTransaction { it.copyToRealmOrUpdate(taggings.body()) }
     }
 
     @Throws(IOException::class)
@@ -237,7 +237,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
             entry.starredFromServer = starred.contains(entry.id)
             entry.unreadFromServer = unread.contains(entry.id)
         }
-        realm.executeTransaction { r -> r.copyToRealmOrUpdate(finalResponse.body()) }
+        realm.executeTransaction { it.copyToRealmOrUpdate(finalResponse.body()) }
     }
 
     class SyncStatus {

@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
+import com.airbnb.lottie.LottieComposition
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
@@ -21,6 +23,10 @@ import org.movieos.feeder.utilities.RealmAdapter
 import org.movieos.feeder.utilities.SyncTask
 import timber.log.Timber
 import java.text.DateFormat
+
+
+
+
 
 class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
@@ -107,6 +113,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     override fun onResume() {
         super.onResume()
         displaySyncTime()
+        setViewType(viewType)
 
         // if we changed page in the detail view, scroll to minimally make that view visible.
         // To do this we tracked the first and last visible rows before we left (because in this
@@ -166,6 +173,17 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         this.viewType = viewType
         binding?.viewType = this.viewType
         adapter?.setQuery(entries(realm, this.viewType))
+        if (adapter?.itemCount == 0) {
+            binding?.empty?.visibility = View.VISIBLE;
+            LottieComposition.Factory.fromInputStream(context, resources.openRawResource(R.raw.empty)) { composition ->
+                binding?.lottie?.setImageAssetsFolder("images")
+                binding?.lottie?.setComposition(composition)
+                binding?.lottie?.playAnimation()
+            }
+        } else {
+            binding?.empty?.visibility = View.GONE;
+            binding?.lottie?.pauseAnimation()
+        }
     }
 
     fun entries(realm: Realm, viewType: Entry.ViewType): RealmResults<Entry> {

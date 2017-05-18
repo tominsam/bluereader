@@ -57,7 +57,7 @@ where T : RealmObject, T : IntegerPrimaryKey, B : ViewDataBinding {
     }
 
     val ids: List<Int>
-        get() = query.map { t -> t.id }
+        get() = query.map { it.id }
 
     @Suppress("UNCHECKED_CAST")
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedViewHolder<B> {
