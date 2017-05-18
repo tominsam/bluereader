@@ -2,7 +2,6 @@ package org.movieos.feeder.model
 
 import android.content.Context
 import android.os.Handler
-import android.support.annotation.UiThread
 import com.google.gson.annotations.SerializedName
 import io.realm.Realm
 import io.realm.RealmObject
@@ -60,6 +59,8 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
 
     var subscription: Subscription? = null
 
+    var locallyUpdated: Date? = null
+
     enum class ViewType {
         UNREAD,
         STARRED,
@@ -79,28 +80,24 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
 
     val isLocallyStarred: Boolean
         get() {
-            val realm = Realm.getDefaultInstance()
-            var localStarred = starredFromServer
-            for (local in LocalState.forEntry(realm, this)) {
-                if (local.markStarred != null) {
-                    localStarred = local.markStarred!!
-                }
+            Realm.getDefaultInstance().use { r ->
+                var localStarred = starredFromServer
+                LocalState.forEntry(r, this)
+                        .filter { it.markStarred != null }
+                        .forEach { localStarred = it.markStarred!! }
+                return localStarred;
             }
-            realm.close()
-            return localStarred
         }
 
     val isLocallyUnread: Boolean
         get() {
-            val realm = Realm.getDefaultInstance()
-            var localUnread = unreadFromServer
-            for (local in LocalState.forEntry(realm, this)) {
-                if (local.markUnread != null) {
-                    localUnread = local.markUnread!!
-                }
+            Realm.getDefaultInstance().use { r ->
+                var localUnread = unreadFromServer
+                LocalState.forEntry(r, this)
+                        .filter { it.markUnread != null }
+                        .forEach { localUnread = it.markUnread!! }
+                return localUnread
             }
-            realm.close()
-            return localUnread
         }
 
     override fun toString(): String {
@@ -110,11 +107,8 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
     companion object {
 
         fun byId(id: Int): Entry? {
-            val realm = Realm.getDefaultInstance()
-            try {
+            Realm.getDefaultInstance().use { realm ->
                 return realm.where(Entry::class.java).equalTo("id", id).findFirst()
-            } finally {
-                realm.close()
             }
         }
 
@@ -129,25 +123,22 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
             }
         }
 
-
-        @UiThread
         fun setStarred(context: Context, realm: Realm, entry: Entry, starred: Boolean) {
             val id = entry.id
-            realm.executeTransactionAsync { r ->
-                r.copyToRealm(LocalState(id, null, starred))
-                // update "server" value - this kicks the object state for observes
-                r.where(Entry::class.java).equalTo("id", id).findFirst().starredFromServer = starred;
+            realm.executeTransactionAsync {
+                realm.copyToRealm(LocalState(id, null, starred))
+                // Arbitrary object change to kick UI
+                byId(id)?.locallyUpdated = Date()
             }
             Handler().postDelayed({ SyncTask.sync(context, false, true) }, 5000)
         }
 
-        @UiThread
         fun setUnread(context: Context, realm: Realm, entry: Entry, unread: Boolean) {
             val id = entry.id
-            realm.executeTransactionAsync { r ->
-                r.copyToRealm(LocalState(id, unread, null))
-                // update "server" value - this kicks the object state for observes
-                r.where(Entry::class.java).equalTo("id", id).findFirst().unreadFromServer = unread;
+            realm.executeTransactionAsync {
+                realm.copyToRealm(LocalState(id, unread, null))
+                // Arbitrary object change to kick UI
+                byId(id)?.locallyUpdated = Date()
             }
             Handler().postDelayed({ SyncTask.sync(context, false, true) }, 5000)
         }

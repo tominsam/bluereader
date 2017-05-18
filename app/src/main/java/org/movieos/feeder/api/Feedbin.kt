@@ -164,8 +164,8 @@ class Feedbin(context: Context) {
 
     companion object {
 
-        protected val CACHE_SIZE_BYTES = 1024 * 1024 * 2
-        protected val UTC_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        private val CACHE_SIZE_BYTES = 1024 * 1024 * 2
+        private val UTC_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
         fun authenticate(context: Context, credentials: String, callback: Callback<Void>) {
             api(context, credentials).authentication().enqueue(callback)

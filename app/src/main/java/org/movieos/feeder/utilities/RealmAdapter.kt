@@ -13,15 +13,10 @@ import org.movieos.feeder.model.IntegerPrimaryKey
 import java.lang.reflect.InvocationTargetException
 
 
-abstract class RealmAdapter<T, B> : RecyclerView.Adapter<RealmAdapter.FeedViewHolder<B>>, OrderedRealmCollectionChangeListener<RealmResults<T>>
+abstract class RealmAdapter<T, B>(internal val klass: Class<B>, internal var query: RealmResults<T>) : RecyclerView.Adapter<RealmAdapter.FeedViewHolder<B>>(), OrderedRealmCollectionChangeListener<RealmResults<T>>
 where T : RealmObject, T : IntegerPrimaryKey, B : ViewDataBinding {
 
-    internal val klass: Class<B>
-    internal var query: RealmResults<T>
-
-    constructor(klass: Class<B>, query: RealmResults<T>) : super() {
-        this.klass = klass
-        this.query = query
+    init {
         setHasStableIds(true)
     }
 
@@ -84,4 +79,5 @@ where T : RealmObject, T : IntegerPrimaryKey, B : ViewDataBinding {
     abstract fun onBindViewHolder(holder: FeedViewHolder<B>, instance: T)
 
     class FeedViewHolder<B : ViewDataBinding>(val binding: B) : RecyclerView.ViewHolder(binding.root)
+
 }

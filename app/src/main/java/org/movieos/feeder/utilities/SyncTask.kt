@@ -18,15 +18,7 @@ import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-class SyncTask : AsyncTask<Void, String, SyncTask.SyncStatus> {
-
-    internal var context: Context
-    internal var pushOnly: Boolean
-
-    private constructor(context: Context, pushOnly: Boolean) : super() {
-        this.context = context
-        this.pushOnly = pushOnly
-    }
+class SyncTask private constructor(internal val context: Context, internal val pushOnly: Boolean) : AsyncTask<Void, String, SyncTask.SyncStatus>() {
 
     private fun start() {
         executeOnExecutor(SYNC_EXECUTOR)
@@ -84,7 +76,7 @@ class SyncTask : AsyncTask<Void, String, SyncTask.SyncStatus> {
         // make list solid here so that later changes are predictable
         val localStates = ArrayList(LocalState.all(realm))
 
-        realm.executeTransaction { r ->
+        realm.executeTransaction {
             for (localState in localStates) {
                 val id = localState.entryId
                 val markStarred = localState.markStarred
@@ -112,39 +104,39 @@ class SyncTask : AsyncTask<Void, String, SyncTask.SyncStatus> {
 
         if (!addStarred.isEmpty()) {
             api.addStarred(addStarred).execute()
-            realm.executeTransaction { r ->
-                for (entry in r.where(Entry::class.java).`in`("id", addStarred.toTypedArray()).findAll()) {
+            realm.executeTransaction {
+                for (entry in realm.where(Entry::class.java).`in`("id", addStarred.toTypedArray()).findAll()) {
                     entry.starredFromServer = true
                 }
             }
         }
         if (!removeStarred.isEmpty()) {
             api.removeStarred(removeStarred).execute()
-            realm.executeTransaction { r ->
-                for (entry in r.where(Entry::class.java).`in`("id", removeStarred.toTypedArray()).findAll()) {
+            realm.executeTransaction {
+                for (entry in realm.where(Entry::class.java).`in`("id", removeStarred.toTypedArray()).findAll()) {
                     entry.starredFromServer = false
                 }
             }
         }
         if (!addUnread.isEmpty()) {
             api.addUnread(addUnread).execute()
-            realm.executeTransaction { r ->
-                for (entry in r.where(Entry::class.java).`in`("id", addUnread.toTypedArray()).findAll()) {
+            realm.executeTransaction {
+                for (entry in realm.where(Entry::class.java).`in`("id", addUnread.toTypedArray()).findAll()) {
                     entry.unreadFromServer = true
                 }
             }
         }
         if (!removeUnread.isEmpty()) {
             api.removeUnread(removeUnread).execute()
-            realm.executeTransaction { r ->
-                for (entry in r.where(Entry::class.java).`in`("id", removeUnread.toTypedArray()).findAll()) {
+            realm.executeTransaction {
+                for (entry in realm.where(Entry::class.java).`in`("id", removeUnread.toTypedArray()).findAll()) {
                     entry.unreadFromServer = false
                 }
             }
         }
 
         if (!localStates.isEmpty()) {
-            realm.executeTransaction { r ->
+            realm.executeTransaction {
                 for (localState in localStates) {
                     localState.deleteFromRealm()
                 }
@@ -197,7 +189,7 @@ class SyncTask : AsyncTask<Void, String, SyncTask.SyncStatus> {
             entryCount += entries.body().size
             publishProgress(String.format(Locale.getDefault(), "Syncing entries (%d)", entryCount))
             if (links.next == null) {
-                break;
+                break
             }
             entries = api.entriesPaginate(links.next!!).execute()
             if (entryCount >= MAX_ENTRIES_COUNT) {
@@ -231,7 +223,7 @@ class SyncTask : AsyncTask<Void, String, SyncTask.SyncStatus> {
         }
         while (!missing.isEmpty()) {
             publishProgress("Backfilling " + missing.size + " entries")
-            val page = missing.sliceSafely(0, CATCHUP_SIZE);
+            val page = missing.sliceSafely(0, CATCHUP_SIZE)
             missing = missing.sliceSafely(CATCHUP_SIZE, missing.size)
             val missingEntries = api.entries(page).execute()
             insertEntries(realm, unread, starred, missingEntries)
