@@ -112,9 +112,6 @@ class Feedbin(context: Context) {
         @GET("subscriptions.json")
         fun subscriptions(@Query("since") since: String?): Call<List<Subscription>>
 
-        @GET
-        fun subscriptionsPaginate(@Url url: String): Call<List<Subscription>>
-
         @GET("entries.json")
         fun entries(@Query("since") since: String?): Call<List<Entry>>
 
@@ -188,7 +185,6 @@ class Feedbin(context: Context) {
                     .registerTypeAdapter(Date::class.java, JavaDateDeserializer())
                     .create()
 
-            val dangerousSocketFactory = dangerousSocketFactory()
 
             var builder = OkHttpClient.Builder()
                     .cache(Cache(context.cacheDir, CACHE_SIZE_BYTES.toLong()))
@@ -198,9 +194,12 @@ class Feedbin(context: Context) {
                                 .build()
                         chain.proceed(request)
                     }
+
+            val dangerousSocketFactory = dangerousSocketFactory()
             if (dangerousSocketFactory != null) {
-                builder = builder.sslSocketFactory(dangerousSocketFactory)
+                builder = builder.sslSocketFactory(dangerousSocketFactory.first, dangerousSocketFactory.second)
             }
+
             val client = builder.build()
 
             val sRetrofit = Retrofit.Builder()
@@ -212,7 +211,7 @@ class Feedbin(context: Context) {
             return sRetrofit.create(RawApi::class.java)
         }
 
-        private fun dangerousSocketFactory(): SSLSocketFactory? {
+        private fun dangerousSocketFactory(): Pair<SSLSocketFactory, X509TrustManager>? {
             if (!BuildConfig.DEBUG) {
                 return null
             }
@@ -233,7 +232,10 @@ class Feedbin(context: Context) {
             try {
                 val sslContext = SSLContext.getInstance("SSL")
                 sslContext.init(null, trustAllCerts, java.security.SecureRandom())
-                return sslContext.socketFactory
+                val trustManager = trustAllCerts[0]
+                if (trustManager is X509TrustManager) {
+                    return Pair(sslContext.socketFactory, trustManager)
+                }
             } catch (e: NoSuchAlgorithmException) {
                 Timber.e(e)
             } catch (e: KeyManagementException) {

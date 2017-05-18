@@ -6,7 +6,6 @@ import android.webkit.WebView
 import io.realm.Realm
 import org.movieos.feeder.fragment.EntriesFragment
 import org.movieos.feeder.fragment.LoginFragment
-import org.movieos.feeder.utilities.FragmentBackHandler
 import org.movieos.feeder.utilities.Settings
 import org.movieos.feeder.utilities.SyncTask
 
@@ -41,17 +40,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-    }
-
-    override fun onBackPressed() {
-        val fragment = supportFragmentManager.findFragmentById(R.id.main_content)
-        if (fragment is FragmentBackHandler) {
-            val handled = fragment.onBackPressed()
-            if (handled) {
-                return
-            }
-        }
-        super.onBackPressed()
     }
 
 }

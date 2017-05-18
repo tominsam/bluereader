@@ -7,7 +7,6 @@ import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.content.ContextCompat
 import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import io.realm.Realm
 import io.realm.RealmChangeListener
@@ -42,6 +41,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
 
     override fun onDestroy() {
         super.onDestroy()
+        realm.removeChangeListener(this)
         realm?.close()
     }
 
@@ -49,7 +49,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
         val binding = DetailFragmentBinding.inflate(inflater, container, false)
 
         binding.toolbar.setNavigationIcon(R.drawable.ic_arrow_back_control_24dp)
-        binding.toolbar.setNavigationOnClickListener { v: View -> activity.onBackPressed() }
+        binding.toolbar.setNavigationOnClickListener { activity.onBackPressed() }
         binding.toolbar.inflateMenu(R.menu.detail_menu)
 
         binding.viewPager.adapter = adapter
