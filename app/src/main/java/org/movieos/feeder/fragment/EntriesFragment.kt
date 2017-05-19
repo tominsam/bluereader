@@ -2,6 +2,7 @@ package org.movieos.feeder.fragment
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.support.v4.app.FragmentTransaction.TRANSIT_FRAGMENT_CLOSE
 import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -23,10 +24,6 @@ import org.movieos.feeder.utilities.RealmAdapter
 import org.movieos.feeder.utilities.SyncTask
 import timber.log.Timber
 import java.text.DateFormat
-
-
-
-
 
 class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
@@ -59,6 +56,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                     fragment.setTargetFragment(this@EntriesFragment, 0)
                     fragmentManager
                             .beginTransaction()
+                            .setTransition(TRANSIT_FRAGMENT_CLOSE)
                             .replace(R.id.main_content, fragment)
                             .addToBackStack(null)
                             .commit()
@@ -193,7 +191,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             Entry.ViewType.STARRED ->
                 return realm.where(Entry::class.java).equalTo("starredFromServer", true).findAllSorted("published", Sort.DESCENDING)
             Entry.ViewType.ALL ->
-                return realm.where(Entry::class.java).findAllSorted("createdAt", Sort.DESCENDING)
+                return realm.where(Entry::class.java).findAllSorted("published", Sort.DESCENDING)
         }
     }
 

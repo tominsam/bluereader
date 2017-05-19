@@ -9,28 +9,37 @@
             max-width: 100%;
             overflow-x: hidden;
         }
-        img, iframe, p, pre, blockquote, table, div, h1 {
+
+        img, iframe, p, pre, blockquote, table, h1, h2, h3, h4, h5, h6, div {
             border: 0;
             vertical-align: middle;
             max-width: 100%;
             height: auto;
-            margin: 12px 8px;
+            margin: 12px 8px 0px 8px;
             padding: 0;
         }
+
         blockquote {
-            padding-left: 8px;
-            margin-left: 8px;
-            border-left: 1px solid #DDDDDD;
+            padding-left: 12px;
+            margin-left: 12px;
+            border-left: 2px solid #CCCCCC;
+        }
+
+        h2 {
+        }
+
+        h4 {
+            margin-bottom: 16px;
         }
 
     </style>
+    <title>{{title}}</title>
 </head>
 <body>
-    <h1><a href="{{link}}">{{title}}</a></h1>
+    <h2><a href="{{link}}">{{title}}</a></h2>
+    <h4>{{author}}</h4>
 
-    <div id="entryContent">
-        {{body}}
-    </div>
+    {{body}}
 </body>
 </html>
 
