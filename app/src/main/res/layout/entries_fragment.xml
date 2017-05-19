@@ -47,6 +47,7 @@
                 android:background="#FFFFFFFF"
                 android:orientation="vertical"
                 android:gravity="center"
+                android:visibility="gone"
                 >
                 <com.airbnb.lottie.LottieAnimationView
                     android:id="@+id/lottie"

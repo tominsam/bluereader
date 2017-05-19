@@ -171,17 +171,17 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         this.viewType = viewType
         binding?.viewType = this.viewType
         adapter?.setQuery(entries(realm, this.viewType))
-        if (adapter?.itemCount == 0) {
-            binding?.empty?.visibility = View.VISIBLE;
-            LottieComposition.Factory.fromInputStream(context, resources.openRawResource(R.raw.empty)) { composition ->
-                binding?.lottie?.setImageAssetsFolder("images")
-                binding?.lottie?.setComposition(composition)
-                binding?.lottie?.playAnimation()
-            }
-        } else {
-            binding?.empty?.visibility = View.GONE;
-            binding?.lottie?.pauseAnimation()
-        }
+//        if (adapter?.itemCount == 0) {
+//            binding?.empty?.visibility = View.VISIBLE;
+//            LottieComposition.Factory.fromInputStream(context, resources.openRawResource(R.raw.empty)) { composition ->
+//                binding?.lottie?.setImageAssetsFolder("images")
+//                binding?.lottie?.setComposition(composition)
+//                binding?.lottie?.playAnimation()
+//            }
+//        } else {
+//            binding?.empty?.visibility = View.GONE;
+//            binding?.lottie?.pauseAnimation()
+//        }
     }
 
     fun entries(realm: Realm, viewType: Entry.ViewType): RealmResults<Entry> {
