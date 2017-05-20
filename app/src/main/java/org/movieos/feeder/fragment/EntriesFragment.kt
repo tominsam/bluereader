@@ -6,9 +6,7 @@ import android.support.v4.app.FragmentTransaction.TRANSIT_FRAGMENT_CLOSE
 import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.MenuItem
-import android.view.View
 import android.view.ViewGroup
-import com.airbnb.lottie.LottieComposition
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort

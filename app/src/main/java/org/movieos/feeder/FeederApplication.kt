@@ -25,6 +25,7 @@ class FeederApplication : android.app.Application() {
         Realm.setDefaultConfiguration(config)
 
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
+
     }
 
     companion object {

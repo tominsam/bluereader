@@ -22,7 +22,6 @@ import io.realm.Realm
 import org.movieos.feeder.R
 import org.movieos.feeder.databinding.DetailPageFragmentBinding
 import org.movieos.feeder.model.Entry
-import timber.log.Timber
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.text.DateFormat
@@ -30,14 +29,8 @@ import java.text.DateFormat
 
 class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
-    internal var entry: Entry? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        userVisibleHint = false
-        val realm = Realm.getDefaultInstance()
-        entry = Entry.byId(realm, arguments.getInt(ENTRY_ID))
-        realm.close()
+    internal val entry: Entry by lazy {
+        Realm.getDefaultInstance().use { Entry.byId(it, arguments.getInt(ENTRY_ID))!! }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -62,11 +55,11 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         registerForContextMenu(binding.webView)
 
         binding.webView.loadDataWithBaseURL(null, template
-                .replace("{{body}}", entry!!.content!!)
-                .replace("{{title}}", Html.escapeHtml(entry!!.title!!))
-                .replace("{{link}}", Html.escapeHtml(entry!!.url!!))
-                .replace("{{author}}", Html.escapeHtml(entry!!.displayAuthor))
-                .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry!!.published)))
+                .replace("{{body}}", entry.content!!)
+                .replace("{{title}}", Html.escapeHtml(entry.title!!))
+                .replace("{{link}}", Html.escapeHtml(entry.url!!))
+                .replace("{{author}}", Html.escapeHtml(entry.displayAuthor))
+                .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry.published)))
                 , "text/html", "utf-8", "")
         return binding
     }
@@ -100,7 +93,7 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
             // Offer any app that can open the link above the share options
             val openIntent = Intent(Intent.ACTION_VIEW, uri)
-            val resInfo = activity.packageManager.queryIntentActivities(openIntent, 0);
+            val resInfo = activity.packageManager.queryIntentActivities(openIntent, 0)
             val extra: MutableList<LabeledIntent> = mutableListOf()
             for (resolveInfo in resInfo) {
                 val packageName = resolveInfo.activityInfo.packageName
@@ -109,59 +102,28 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
                 val label = resolveInfo.loadLabel(activity.packageManager)
                 extra.add(LabeledIntent(intent, packageName, "Open in $label", 0))
             }
-            chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, extra.toTypedArray());
+            chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, extra.toTypedArray())
 
             startActivity(chooser)
         }
     }
 
-    private val template: String
-        get() {
-            if (sTemplate == null) {
-                try {
-                    val inputStream = resources.openRawResource(R.raw.template)
-
-                    val inputStringBuilder = StringBuilder()
-                    val bufferedReader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
-                    var line: String? = bufferedReader.readLine()
-
-                    while (line != null) {
-                        inputStringBuilder.append(line)
-                        inputStringBuilder.append('\n')
-                        line = bufferedReader.readLine()
-                    }
-
-                    sTemplate = inputStringBuilder.toString()
-
-                } catch (e: Exception) {
-                    throw RuntimeException(e)
-                }
-
-            }
-            return sTemplate!!
+    private val template: String by lazy {
+        val inputStream = resources.openRawResource(R.raw.template)
+        val inputStringBuilder = StringBuilder()
+        val bufferedReader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
+        var line: String? = bufferedReader.readLine()
+        while (line != null) {
+            inputStringBuilder.append(line)
+            inputStringBuilder.append('\n')
+            line = bufferedReader.readLine()
         }
-
-    override fun onResume() {
-        super.onResume()
-        if (isVisible) {
-            Timber.i("entry $entry is visible")
-        }
-
-        entry?.let { e ->
-            if (isVisible && e.locallyUnread) {
-                val realm = Realm.getDefaultInstance()
-                //Entry.setUnread(getContext(), realm, mEntry, false);
-                realm.close()
-            }
-        }
-
+        inputStringBuilder.toString()
     }
 
     companion object {
 
         private val ENTRY_ID = "entry_id"
-
-        internal var sTemplate: String? = null
 
         fun create(entryId: Int): DetailPageFragment {
             val fragment = DetailPageFragment()
