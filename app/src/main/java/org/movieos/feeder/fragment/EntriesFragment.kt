@@ -94,6 +94,10 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             true
         }
 
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            SyncTask.sync(activity, true, false)
+        }
+
         binding.stateUnread.setOnClickListener { setViewType(Entry.ViewType.UNREAD) }
         binding.stateStarred.setOnClickListener { setViewType(Entry.ViewType.STARRED) }
         binding.stateAll.setOnClickListener { setViewType(Entry.ViewType.ALL) }
@@ -138,6 +142,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun syncStatus(status: SyncTask.SyncStatus) {
         if (status.isComplete) {
+            binding?.swipeRefreshLayout?.isRefreshing = false
             displaySyncTime()
         } else {
             binding?.toolbar?.subtitle = status.status
