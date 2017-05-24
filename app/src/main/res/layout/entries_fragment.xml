@@ -2,7 +2,6 @@
 <layout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     >
 
     <data>
@@ -47,6 +46,21 @@
                     />
             </android.support.v4.widget.SwipeRefreshLayout>
 
+            <FrameLayout
+                android:id="@+id/empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#FFFFFFFF"
+                >
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_gravity="center"
+                    android:text="No entries"
+                    android:textAppearance="@style/text_title"
+                    />
+            </FrameLayout>
         </FrameLayout>
 
         <LinearLayout

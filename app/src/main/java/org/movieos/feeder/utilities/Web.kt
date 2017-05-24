@@ -10,7 +10,7 @@ class Web {
 
     companion object {
 
-        fun openInBrowser(activity: Activity, url: String) {
+        fun openInBrowser(activity: Activity, url: String?) {
             val builder = CustomTabsIntent.Builder()
             builder.setToolbarColor(ContextCompat.getColor(activity, R.color.primary))
             builder.addDefaultShareMenuItem()

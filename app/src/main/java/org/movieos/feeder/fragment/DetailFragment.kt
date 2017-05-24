@@ -98,7 +98,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
             when (it.itemId) {
                 R.id.menu_star -> Entry.setStarred(context, realm, entry, !entry.locallyStarred)
                 R.id.menu_unread -> Entry.setUnread(context, realm, entry, !entry.locallyUnread)
-                R.id.menu_open -> Web.openInBrowser(activity, entry.url!!)
+                R.id.menu_open -> Web.openInBrowser(activity, entry.url)
                 R.id.menu_share -> {
                     val shareIntent = Intent(Intent.ACTION_SEND)
                     shareIntent.type = "text/plain"

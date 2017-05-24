@@ -6,6 +6,7 @@ import android.support.v4.app.FragmentTransaction.TRANSIT_FRAGMENT_CLOSE
 import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
 import io.realm.Realm
 import io.realm.RealmResults
@@ -20,6 +21,7 @@ import org.movieos.feeder.model.Entry
 import org.movieos.feeder.model.SyncState
 import org.movieos.feeder.utilities.RealmAdapter
 import org.movieos.feeder.utilities.SyncTask
+import org.movieos.feeder.utilities.sliceSafely
 import timber.log.Timber
 import java.text.DateFormat
 
@@ -49,7 +51,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             override fun onBindViewHolder(holder: RealmAdapter.FeedViewHolder<EntryRowBinding>, instance: Entry) {
                 holder.binding.entry = instance
                 holder.itemView.setOnClickListener {
-                    Entry.setUnread(context, realm, Entry.byId(realm, instance.id)!!, false)
+                    Entry.setUnread(context, realm, instance, false)
                     val fragment = DetailFragment.create(ids, instance.id)
                     fragment.setTargetFragment(this@EntriesFragment, 0)
                     fragmentManager
@@ -88,6 +90,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         binding.toolbar.setOnMenuItemClickListener { item: MenuItem ->
             when (item.itemId) {
                 R.id.menu_refresh -> {
+                    item.isEnabled = false
                     SyncTask.sync(activity, true, false)
                 }
             }
@@ -95,6 +98,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         }
 
         binding.swipeRefreshLayout.setOnRefreshListener {
+            binding.toolbar.menu?.findItem(R.id.menu_refresh)?.isEnabled = false
             SyncTask.sync(activity, true, false)
         }
 
@@ -143,7 +147,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     fun syncStatus(status: SyncTask.SyncStatus) {
         if (status.isComplete) {
             binding?.swipeRefreshLayout?.isRefreshing = false
+            setViewType(viewType)
             displaySyncTime()
+            binding?.toolbar?.menu?.findItem(R.id.menu_refresh)?.isEnabled = true
         } else {
             binding?.toolbar?.subtitle = status.status
         }
@@ -174,28 +180,38 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         this.viewType = viewType
         binding?.viewType = this.viewType
         adapter?.setQuery(entries(realm, this.viewType))
-//        if (adapter?.itemCount == 0) {
-//            binding?.empty?.visibility = View.VISIBLE;
+        if (adapter?.itemCount == 0) {
+            binding?.empty?.visibility = View.VISIBLE
 //            LottieComposition.Factory.fromInputStream(context, resources.openRawResource(R.raw.empty)) { composition ->
 //                binding?.lottie?.setImageAssetsFolder("images")
 //                binding?.lottie?.setComposition(composition)
 //                binding?.lottie?.playAnimation()
 //            }
-//        } else {
-//            binding?.empty?.visibility = View.GONE;
+        } else {
+            binding?.empty?.visibility = View.GONE
 //            binding?.lottie?.pauseAnimation()
-//        }
+        }
     }
 
     fun entries(realm: Realm, viewType: Entry.ViewType): RealmResults<Entry> {
-        when (viewType) {
+        val entries = when (viewType) {
             Entry.ViewType.UNREAD ->
-                return realm.where(Entry::class.java).equalTo("unreadFromServer", true).findAllSorted("published", Sort.DESCENDING)
+                realm.where(Entry::class.java).equalTo("unreadFromServer", true).findAllSorted("published", Sort.DESCENDING)
             Entry.ViewType.STARRED ->
-                return realm.where(Entry::class.java).equalTo("starredFromServer", true).findAllSorted("published", Sort.DESCENDING)
+                realm.where(Entry::class.java).equalTo("starredFromServer", true).findAllSorted("published", Sort.DESCENDING)
             Entry.ViewType.ALL ->
-                return realm.where(Entry::class.java).findAllSorted("published", Sort.DESCENDING)
+                realm.where(Entry::class.java).findAllSorted("published", Sort.DESCENDING)
         }
+        if (entries.size == 0) {
+            // gratuitous impossible data set
+            return realm.where(Entry::class.java).equalTo("id", -1).findAll()
+        }
+        // So this looks weird. We get the matching entries, but the _real_ reusltset is pinned
+        // to "things that matched the query when we ran it", so that pushing read state to the
+        // server won't remove elements from the list. Force-refreshing the entries list will
+        // rebuild the query and show more things.
+        val ids = (entries.map { it.id }).sliceSafely(0, 2000).toTypedArray()
+        return realm.where(Entry::class.java).`in`("id", ids).findAllSorted("published", Sort.DESCENDING)
     }
 
 

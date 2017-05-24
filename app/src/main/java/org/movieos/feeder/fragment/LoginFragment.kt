@@ -1,7 +1,6 @@
 package org.movieos.feeder.fragment
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import okhttp3.Credentials
 import org.movieos.feeder.R
@@ -16,7 +15,7 @@ class LoginFragment : DataBindingFragment<LoginFragmentBinding>() {
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): LoginFragmentBinding {
         val binding = LoginFragmentBinding.inflate(inflater, container, false)
 
-        binding.button.setOnClickListener { v: View ->
+        binding.button.setOnClickListener {
             val credentials = Credentials.basic(binding.email.text.toString(), binding.password.text.toString())
 
             binding.button.isEnabled = false
