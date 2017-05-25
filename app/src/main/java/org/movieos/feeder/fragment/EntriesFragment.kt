@@ -123,13 +123,16 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         // To do this we tracked the first and last visible rows before we left (because in this
         // method we're not laid out yet), and will assume this has not changed. If the phone
         // has rotated or resized we'll guess wrong here.
-        if (binding != null && currentEntry >= 0 && firstBeforePause >= 0 && lastBeforePause >= 0) {
-            if (currentEntry < firstBeforePause) {
-                binding!!.recyclerView.scrollToPosition(currentEntry)
-            } else if (currentEntry > lastBeforePause) {
-                binding!!.recyclerView.scrollToPosition(currentEntry - (lastBeforePause - firstBeforePause))
+        val binding = binding
+        if (binding != null) {
+            if (currentEntry >= 0 && firstBeforePause >= 0 && lastBeforePause >= 0) {
+                if (currentEntry < firstBeforePause) {
+                    binding.recyclerView.scrollToPosition(currentEntry)
+                } else if (currentEntry > lastBeforePause) {
+                    binding.recyclerView.scrollToPosition(currentEntry - (lastBeforePause - firstBeforePause))
+                }
+                currentEntry = -1
             }
-            currentEntry = -1
         }
     }
 

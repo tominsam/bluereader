@@ -55,9 +55,9 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         registerForContextMenu(binding.webView)
 
         binding.webView.loadDataWithBaseURL(null, template
-                .replace("{{body}}", entry.content!!)
-                .replace("{{title}}", Html.escapeHtml(entry.title!!))
-                .replace("{{link}}", Html.escapeHtml(entry.url!!))
+                .replace("{{body}}", entry.content ?: "")
+                .replace("{{title}}", Html.escapeHtml(entry.title ?: ""))
+                .replace("{{link}}", Html.escapeHtml(entry.url ?: ""))
                 .replace("{{author}}", Html.escapeHtml(entry.displayAuthor))
                 .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry.published)))
                 , "text/html", "utf-8", "")
