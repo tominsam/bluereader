@@ -106,7 +106,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
             api.addStarred(addStarred).execute()
             realm.executeTransaction { r ->
                 for (entry in r.where(Entry::class.java).`in`("id", addStarred.toTypedArray()).findAll()) {
-                    entry.starredFromServer = true
+                    entry.starred = true
                 }
             }
         }
@@ -114,7 +114,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
             api.removeStarred(removeStarred).execute()
             realm.executeTransaction { r ->
                 for (entry in r.where(Entry::class.java).`in`("id", removeStarred.toTypedArray()).findAll()) {
-                    entry.starredFromServer = false
+                    entry.starred = false
                 }
             }
         }
@@ -122,7 +122,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
             api.addUnread(addUnread).execute()
             realm.executeTransaction { r ->
                 for (entry in r.where(Entry::class.java).`in`("id", addUnread.toTypedArray()).findAll()) {
-                    entry.unreadFromServer = true
+                    entry.unread = true
                 }
             }
         }
@@ -130,7 +130,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
             api.removeUnread(removeUnread).execute()
             realm.executeTransaction { r ->
                 for (entry in r.where(Entry::class.java).`in`("id", removeUnread.toTypedArray()).findAll()) {
-                    entry.unreadFromServer = false
+                    entry.unread = false
                 }
             }
         }
@@ -201,8 +201,8 @@ class SyncTask private constructor(internal val context: Context, internal val p
         // it in the API response if it's not new.
         realm.executeTransaction { r ->
             for (entry in r.where(Entry::class.java).findAll()) {
-                entry.unreadFromServer = unread.contains(entry.id)
-                entry.starredFromServer = starred.contains(entry.id)
+                entry.unread = unread.contains(entry.id)
+                entry.starred = starred.contains(entry.id)
             }
         }
 
@@ -234,8 +234,8 @@ class SyncTask private constructor(internal val context: Context, internal val p
             // Connect entries to their subscriptions
             entry.subscription = realm.where(Subscription::class.java).equalTo("feedId", entry.feedId).findFirst()
             // Create entries with the right read/unread state
-            entry.starredFromServer = starred.contains(entry.id)
-            entry.unreadFromServer = unread.contains(entry.id)
+            entry.starred = starred.contains(entry.id)
+            entry.unread = unread.contains(entry.id)
         }
         realm.executeTransaction { it.copyToRealmOrUpdate(finalResponse.body()) }
     }

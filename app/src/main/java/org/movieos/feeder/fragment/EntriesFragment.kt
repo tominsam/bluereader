@@ -21,7 +21,6 @@ import org.movieos.feeder.model.Entry
 import org.movieos.feeder.model.SyncState
 import org.movieos.feeder.utilities.RealmAdapter
 import org.movieos.feeder.utilities.SyncTask
-import org.movieos.feeder.utilities.sliceSafely
 import timber.log.Timber
 import java.text.DateFormat
 
@@ -34,22 +33,20 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     private var lastBeforePause: Int = 0
 
     internal var viewType: Entry.ViewType = Entry.ViewType.UNREAD
+    internal var entries: RealmResults<Entry>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FeederApplication.bus.register(this)
         if (savedInstanceState != null) {
             val viewType = savedInstanceState.getSerializable(VIEW_TYPE) as Entry.ViewType?
-            if (viewType != null) {
-                this.viewType = viewType
-            }
+            this.viewType = viewType ?: this.viewType
         }
 
-        val entries = entries(realm, viewType)
-
-        adapter = object : RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding::class.java, entries) {
+        adapter = object : RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding::class.java, Entry::class.java) {
             override fun onBindViewHolder(holder: RealmAdapter.FeedViewHolder<EntryRowBinding>, instance: Entry) {
                 holder.binding.entry = instance
+
                 holder.itemView.setOnClickListener {
                     Entry.setUnread(context, realm, instance, false)
                     val fragment = DetailFragment.create(ids, instance.id)
@@ -61,6 +58,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                             .addToBackStack(null)
                             .commit()
                 }
+
                 holder.binding.star.setOnClickListener { v ->
                     val newState = !v.isSelected
                     Entry.setStarred(context, realm, instance, newState)
@@ -68,19 +66,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 }
             }
         }
+
+        setViewType(viewType)
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
         super.onSaveInstanceState(outState)
         outState!!.putSerializable(VIEW_TYPE, viewType)
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        realm.close()
-        FeederApplication.bus.unregister(this)
-    }
-
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): EntriesFragmentBinding {
         val binding = EntriesFragmentBinding.inflate(inflater, container, false)
@@ -117,22 +110,19 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     override fun onResume() {
         super.onResume()
         displaySyncTime()
-        setViewType(viewType)
 
         // if we changed page in the detail view, scroll to minimally make that view visible.
         // To do this we tracked the first and last visible rows before we left (because in this
         // method we're not laid out yet), and will assume this has not changed. If the phone
         // has rotated or resized we'll guess wrong here.
-        val binding = binding
-        if (binding != null) {
-            if (currentEntry >= 0 && firstBeforePause >= 0 && lastBeforePause >= 0) {
-                if (currentEntry < firstBeforePause) {
-                    binding.recyclerView.scrollToPosition(currentEntry)
-                } else if (currentEntry > lastBeforePause) {
-                    binding.recyclerView.scrollToPosition(currentEntry - (lastBeforePause - firstBeforePause))
-                }
-                currentEntry = -1
+        val binding = binding ?: return
+        if (currentEntry >= 0 && firstBeforePause >= 0 && lastBeforePause >= 0) {
+            if (currentEntry < firstBeforePause) {
+                binding.recyclerView.scrollToPosition(currentEntry)
+            } else if (currentEntry > lastBeforePause) {
+                binding.recyclerView.scrollToPosition(currentEntry - (lastBeforePause - firstBeforePause))
             }
+            currentEntry = -1
         }
     }
 
@@ -144,6 +134,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             lastBeforePause = manager.findLastCompletelyVisibleItemPosition()
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        realm.close()
+        FeederApplication.bus.unregister(this)
+    }
+
+
 
     @Suppress("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -174,7 +172,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     fun childDisplayedEntryId(entryId: Int) {
         Timber.i("childDiplayedEntryId " + entryId)
         val entry = Entry.byId(realm, entryId)
-        if (entry != null && entry.locallyUnread && context != null) {
+        if (entry != null && entry.unread && context != null) {
             Entry.setUnread(context, realm, entry, false)
         }
     }
@@ -182,39 +180,41 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     private fun setViewType(viewType: Entry.ViewType) {
         this.viewType = viewType
         binding?.viewType = this.viewType
-        adapter?.setQuery(entries(realm, this.viewType))
-        if (adapter?.itemCount == 0) {
-            binding?.empty?.visibility = View.VISIBLE
-//            LottieComposition.Factory.fromInputStream(context, resources.openRawResource(R.raw.empty)) { composition ->
-//                binding?.lottie?.setImageAssetsFolder("images")
-//                binding?.lottie?.setComposition(composition)
-//                binding?.lottie?.playAnimation()
-//            }
-        } else {
-            binding?.empty?.visibility = View.GONE
-//            binding?.lottie?.pauseAnimation()
-        }
+
+        entries?.removeAllChangeListeners()
+        entries = entries(realm, this.viewType)
+        entries?.addChangeListener({ results, changeset ->
+            adapter?.entries = results
+            if (results.size == 0) {
+                binding?.empty?.visibility = View.VISIBLE
+            } else {
+                binding?.empty?.visibility = View.GONE
+            }
+        })
     }
 
     fun entries(realm: Realm, viewType: Entry.ViewType): RealmResults<Entry> {
         val entries = when (viewType) {
             Entry.ViewType.UNREAD ->
-                realm.where(Entry::class.java).equalTo("unreadFromServer", true).findAllSorted("published", Sort.DESCENDING)
+                realm.where(Entry::class.java).equalTo("unread", true).findAllSortedAsync("published", Sort.DESCENDING)
             Entry.ViewType.STARRED ->
-                realm.where(Entry::class.java).equalTo("starredFromServer", true).findAllSorted("published", Sort.DESCENDING)
+                realm.where(Entry::class.java).equalTo("starred", true).findAllSortedAsync("published", Sort.DESCENDING)
             Entry.ViewType.ALL ->
-                realm.where(Entry::class.java).findAllSorted("published", Sort.DESCENDING)
+                realm.where(Entry::class.java).findAllSortedAsync("published", Sort.DESCENDING)
         }
-        if (entries.size == 0) {
-            // gratuitous impossible data set
-            return realm.where(Entry::class.java).equalTo("id", -1).findAll()
-        }
-        // So this looks weird. We get the matching entries, but the _real_ reusltset is pinned
-        // to "things that matched the query when we ran it", so that pushing read state to the
-        // server won't remove elements from the list. Force-refreshing the entries list will
-        // rebuild the query and show more things.
-        val ids = (entries.map { it.id }).sliceSafely(0, 2000).toTypedArray()
-        return realm.where(Entry::class.java).`in`("id", ids).findAllSorted("published", Sort.DESCENDING)
+//        if (entries.size == 0) {
+//            // gratuitous impossible data set
+//            return realm.where(Entry::class.java).equalTo("id", -1).findAllAsync()
+//        }
+        return entries;
+//        // So this looks weird. We get the matching entries, but the _real_ reusltset is pinned
+//        // to "things that matched the query when we ran it", so that pushing read state to the
+//        // server won't remove elements from the list. Force-refreshing the entries list will
+//        // rebuild the query and show more things.
+//        val ids = (entries.map { it.id }).sliceSafely(0, 2000).toTypedArray()
+//        Timber.i("ids are ${Arrays.toString(ids)}")
+//
+//        return realm.where(Entry::class.java).`in`("id", ids).findAllSortedAsync("published", Sort.DESCENDING)
     }
 
 

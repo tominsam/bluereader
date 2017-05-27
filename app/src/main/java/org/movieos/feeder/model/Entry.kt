@@ -51,13 +51,11 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
     var published: Date? = null
         internal set
 
-    var unreadFromServer: Boolean = false
+    var unread: Boolean = false
 
-    var starredFromServer: Boolean = false
+    var starred: Boolean = false
 
     var subscription: Subscription? = null
-
-    var locallyUpdated: Date? = null
 
     enum class ViewType {
         UNREAD,
@@ -76,28 +74,6 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
             }
         }
 
-    val locallyStarred: Boolean
-        get() {
-            Realm.getDefaultInstance().use { r ->
-                var localStarred = starredFromServer
-                LocalState.forEntry(r, this)
-                        .filter { it.markStarred != null }
-                        .forEach { localStarred = it.markStarred!! }
-                return localStarred;
-            }
-        }
-
-    val locallyUnread: Boolean
-        get() {
-            Realm.getDefaultInstance().use { r ->
-                var localUnread = unreadFromServer
-                LocalState.forEntry(r, this)
-                        .filter { it.markUnread != null }
-                        .forEach { localUnread = it.markUnread!! }
-                return localUnread
-            }
-        }
-
     override fun toString(): String {
         return String.format(Locale.US, "<Entry %d %s>", id, title)
     }
@@ -112,13 +88,7 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
             val id = entry.id
             realm.executeTransactionAsync { r ->
                 r.copyToRealm(LocalState(id, null, starred))
-                // Arbitrary object change to kick UI
-                byId(r, id)?.locallyUpdated = Date()
-                if (starred) {
-                    // If the object is starred, add it to the starred query immediately,
-                    // otherwise we won't update the local state till the server syncs
-                    byId(r, id)?.starredFromServer = starred
-                }
+                byId(r, id)?.starred = starred
             }
             // Wait longer when unstarring things
             Handler().postDelayed({ SyncTask.sync(context, false, true) }, if (starred) 5_000L else 20_000L)
@@ -128,13 +98,7 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
             val id = entry.id
             realm.executeTransactionAsync { r ->
                 r.copyToRealm(LocalState(id, unread, null))
-                // Arbitrary object change to kick UI
-                byId(r, id)?.locallyUpdated = Date()
-                if (unread) {
-                    // If the object is unread, add it to the unread query immediately,
-                    // otherwise we won't update the local state till the server syncs
-                    byId(r, id)?.unreadFromServer = unread
-                }
+                byId(r, id)?.unread = unread
             }
             // wait longer when reading things (as it's a passive action)
             Handler().postDelayed({ SyncTask.sync(context, false, true) }, if (unread) 5_000L else 20_000L)

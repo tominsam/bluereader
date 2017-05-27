@@ -85,19 +85,19 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
         val entry = Entry.byId(realm, entryIds[binding.viewPager.currentItem]) ?: return
 
         val starred = binding.toolbar.menu.findItem(R.id.menu_star)
-        val star = ContextCompat.getDrawable(context, if (entry.locallyStarred) R.drawable.ic_star_24dp else R.drawable.ic_star_border_24dp)
+        val star = ContextCompat.getDrawable(context, if (entry.starred) R.drawable.ic_star_24dp else R.drawable.ic_star_border_24dp)
         star.setTint(0xFFFFFFFF.toInt())
         starred.icon = star
 
         val unread = binding.toolbar.menu.findItem(R.id.menu_unread)
-        val circle = ContextCompat.getDrawable(context, if (entry.locallyUnread) R.drawable.ic_remove_circle_black_24dp else R.drawable.ic_remove_circle_outline_black_24dp)
+        val circle = ContextCompat.getDrawable(context, if (entry.unread) R.drawable.ic_remove_circle_black_24dp else R.drawable.ic_remove_circle_outline_black_24dp)
         circle.setTint(0xFFFFFFFF.toInt())
         unread.icon = circle
 
         binding.toolbar.setOnMenuItemClickListener {
             when (it.itemId) {
-                R.id.menu_star -> Entry.setStarred(context, realm, entry, !entry.locallyStarred)
-                R.id.menu_unread -> Entry.setUnread(context, realm, entry, !entry.locallyUnread)
+                R.id.menu_star -> Entry.setStarred(context, realm, entry, !entry.starred)
+                R.id.menu_unread -> Entry.setUnread(context, realm, entry, !entry.unread)
                 R.id.menu_open -> Web.openInBrowser(activity, entry.url)
                 R.id.menu_share -> {
                     val shareIntent = Intent(Intent.ACTION_SEND)
