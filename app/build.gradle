@@ -2,6 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'realm-android'
 
+buildscript {
+    //ext.support_version = '25.3.1'
+    ext.support_version = '26.0.0-alpha1'
+}
+
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
