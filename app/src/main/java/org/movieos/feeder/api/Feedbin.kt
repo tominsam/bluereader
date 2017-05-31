@@ -190,9 +190,10 @@ class Feedbin(context: Context) {
                     .cache(Cache(context.cacheDir, CACHE_SIZE_BYTES.toLong()))
                     .addInterceptor { chain ->
                         val request = chain.request().newBuilder()
-                                .addHeader("Authorization", credentials)
-                                .build()
-                        chain.proceed(request)
+                        if (credentials != null) {
+                            request.addHeader("Authorization", credentials)
+                        }
+                        chain.proceed(request.build())
                     }
 
             val dangerousSocketFactory = dangerousSocketFactory()

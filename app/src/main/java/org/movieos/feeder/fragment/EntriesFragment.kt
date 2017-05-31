@@ -1,6 +1,7 @@
 package org.movieos.feeder.fragment
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.FragmentTransaction.TRANSIT_FRAGMENT_CLOSE
 import android.support.v7.widget.LinearLayoutManager
@@ -9,17 +10,19 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import io.realm.Realm
+import io.realm.RealmQuery
 import io.realm.RealmResults
-import io.realm.Sort
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.movieos.feeder.FeederApplication
+import org.movieos.feeder.MainActivity
 import org.movieos.feeder.R
 import org.movieos.feeder.databinding.EntriesFragmentBinding
 import org.movieos.feeder.databinding.EntryRowBinding
 import org.movieos.feeder.model.Entry
 import org.movieos.feeder.model.SyncState
 import org.movieos.feeder.utilities.RealmAdapter
+import org.movieos.feeder.utilities.Settings
 import org.movieos.feeder.utilities.SyncTask
 import timber.log.Timber
 import java.text.DateFormat
@@ -67,12 +70,12 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             }
         }
 
-        setViewType(viewType)
+        setViewType(viewType, false)
     }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
+    override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState!!.putSerializable(VIEW_TYPE, viewType)
+        outState.putSerializable(VIEW_TYPE, viewType)
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): EntriesFragmentBinding {
@@ -86,6 +89,10 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                     item.isEnabled = false
                     SyncTask.sync(activity, true, false)
                 }
+                R.id.menu_logout -> {
+                    Settings.saveCredentials(activity, null)
+                    startActivity(Intent(activity, MainActivity::class.java))
+                }
             }
             true
         }
@@ -95,9 +102,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             SyncTask.sync(activity, true, false)
         }
 
-        binding.stateUnread.setOnClickListener { setViewType(Entry.ViewType.UNREAD) }
-        binding.stateStarred.setOnClickListener { setViewType(Entry.ViewType.STARRED) }
-        binding.stateAll.setOnClickListener { setViewType(Entry.ViewType.ALL) }
+        binding.stateUnread.setOnClickListener { setViewType(Entry.ViewType.UNREAD, true) }
+        binding.stateStarred.setOnClickListener { setViewType(Entry.ViewType.STARRED, true) }
+        binding.stateAll.setOnClickListener { setViewType(Entry.ViewType.ALL, true) }
 
         if (SyncState.latest(realm) == null) {
             // first run / first sync
@@ -124,6 +131,8 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             }
             currentEntry = -1
         }
+
+        setViewType(viewType, false)
     }
 
     override fun onPause() {
@@ -147,8 +156,8 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun syncStatus(status: SyncTask.SyncStatus) {
         if (status.isComplete) {
+            setViewType(viewType, binding?.swipeRefreshLayout?.isRefreshing ?: false)
             binding?.swipeRefreshLayout?.isRefreshing = false
-            setViewType(viewType)
             displaySyncTime()
             binding?.toolbar?.menu?.findItem(R.id.menu_refresh)?.isEnabled = true
         } else {
@@ -171,19 +180,22 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     fun childDisplayedEntryId(entryId: Int) {
         Timber.i("childDiplayedEntryId " + entryId)
-        val entry = Entry.byId(realm, entryId)
+        val entry = Entry.byId(realm, entryId).findFirst()
         if (entry != null && entry.unread && context != null) {
             Entry.setUnread(context, realm, entry, false)
         }
     }
 
-    private fun setViewType(viewType: Entry.ViewType) {
+    private fun setViewType(viewType: Entry.ViewType, clearState: Boolean) {
+        // If we're keeping the same viewtype, then never _remove_ entries
+        val currentIds = if (this.viewType == viewType && !clearState) entries?.map{ it.id } else null
+
         this.viewType = viewType
         binding?.viewType = this.viewType
 
         entries?.removeAllChangeListeners()
-        entries = entries(realm, this.viewType)
-        entries?.addChangeListener({ results, changeset ->
+        entries = entries(realm, this.viewType, currentIds)
+        entries?.addChangeListener({ results, _ ->
             adapter?.entries = results
             if (results.size == 0) {
                 binding?.empty?.visibility = View.VISIBLE
@@ -193,33 +205,25 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         })
     }
 
-    fun entries(realm: Realm, viewType: Entry.ViewType): RealmResults<Entry> {
-        val entries = when (viewType) {
+    fun entries(realm: Realm, viewType: Entry.ViewType, currently: List<Int>?): RealmResults<Entry> {
+        // TODO bug, the first fime we build this it' sa raw query. So if we mark something as
+        // read before we rebuild the list for any reason, that entry will dissapear.
+        Timber.i("currently is $currently")
+        val entries: RealmQuery<Entry> = when (viewType) {
             Entry.ViewType.UNREAD ->
-                realm.where(Entry::class.java).equalTo("unread", true).findAllSortedAsync("published", Sort.DESCENDING)
+                realm.where(Entry::class.java).equalTo("unread", true)
             Entry.ViewType.STARRED ->
-                realm.where(Entry::class.java).equalTo("starred", true).findAllSortedAsync("published", Sort.DESCENDING)
+                realm.where(Entry::class.java).equalTo("starred", true)
             Entry.ViewType.ALL ->
-                realm.where(Entry::class.java).findAllSortedAsync("published", Sort.DESCENDING)
+                realm.where(Entry::class.java)
         }
-//        if (entries.size == 0) {
-//            // gratuitous impossible data set
-//            return realm.where(Entry::class.java).equalTo("id", -1).findAllAsync()
-//        }
-        return entries;
-//        // So this looks weird. We get the matching entries, but the _real_ reusltset is pinned
-//        // to "things that matched the query when we ran it", so that pushing read state to the
-//        // server won't remove elements from the list. Force-refreshing the entries list will
-//        // rebuild the query and show more things.
-//        val ids = (entries.map { it.id }).sliceSafely(0, 2000).toTypedArray()
-//        Timber.i("ids are ${Arrays.toString(ids)}")
-//
-//        return realm.where(Entry::class.java).`in`("id", ids).findAllSortedAsync("published", Sort.DESCENDING)
+        currently?.forEach {
+            entries.or().equalTo("id", it)
+        }
+        return entries.findAllSortedAsync("published", io.realm.Sort.DESCENDING)
     }
 
-
     companion object {
-
         private val VIEW_TYPE = "view_type"
     }
 

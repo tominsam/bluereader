@@ -210,12 +210,12 @@ class SyncTask private constructor(internal val context: Context, internal val p
         // fetch those explicitly.
         var missing: List<Int> = ArrayList()
         for (integer in unread) {
-            if (Entry.byId(realm, integer) == null) {
+            if (Entry.byId(realm, integer).findFirst() == null) {
                 missing += integer
             }
         }
         for (integer in starred) {
-            if (Entry.byId(realm, integer) == null) {
+            if (Entry.byId(realm, integer).findFirst() == null) {
                 missing += integer
             }
         }
@@ -269,10 +269,16 @@ class SyncTask private constructor(internal val context: Context, internal val p
         private val MAX_ENTRIES_COUNT = 1000
 
         fun sync(context: Context, force: Boolean, pushOnly: Boolean) {
+            if (Settings.getCredentials(context) == null) {
+                return
+            }
             val realm = Realm.getDefaultInstance()
             val state = SyncState.latest(realm)
             if (state == null || state.isStale || force || pushOnly) {
+                Timber.i("Syncing")
                 SyncTask(context, pushOnly).start()
+            } else {
+                Timber.i("Not syncing")
             }
             realm.close()
         }

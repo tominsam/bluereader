@@ -20,7 +20,7 @@ open class SyncState : RealmObject {
     }
 
     val isStale: Boolean
-        get() = Date().time - timeStamp.time > 1000 * 60 * 20
+        get() = Date().time - timeStamp.time > 1000 * 60 * 5
 
     companion object {
 

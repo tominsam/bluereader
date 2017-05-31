@@ -5,6 +5,7 @@ import android.os.Handler
 import com.google.gson.annotations.SerializedName
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.RealmQuery
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import io.realm.annotations.Required
@@ -80,15 +81,15 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
 
     companion object {
 
-        fun byId(realm: Realm, id: Int): Entry? {
-            return realm.where(Entry::class.java).equalTo("id", id).findFirst()
+        fun byId(realm: Realm, id: Int): RealmQuery<Entry> {
+            return realm.where(Entry::class.java).equalTo("id", id)
         }
 
         fun setStarred(context: Context, realm: Realm, entry: Entry, starred: Boolean) {
             val id = entry.id
             realm.executeTransactionAsync { r ->
                 r.copyToRealm(LocalState(id, null, starred))
-                byId(r, id)?.starred = starred
+                byId(r, id).findFirst()?.starred = starred
             }
             // Wait longer when unstarring things
             Handler().postDelayed({ SyncTask.sync(context, false, true) }, if (starred) 5_000L else 20_000L)
@@ -98,7 +99,7 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
             val id = entry.id
             realm.executeTransactionAsync { r ->
                 r.copyToRealm(LocalState(id, unread, null))
-                byId(r, id)?.unread = unread
+                byId(r, id).findFirst()?.unread = unread
             }
             // wait longer when reading things (as it's a passive action)
             Handler().postDelayed({ SyncTask.sync(context, false, true) }, if (unread) 5_000L else 20_000L)

@@ -9,39 +9,36 @@ import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import io.realm.Realm
-import io.realm.RealmChangeListener
 import org.movieos.feeder.R
 import org.movieos.feeder.databinding.DetailFragmentBinding
 import org.movieos.feeder.model.Entry
 import org.movieos.feeder.utilities.Web
+import timber.log.Timber
 
-class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChangeListener<Realm> {
+class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
 
-    internal var adapter: FragmentStatePagerAdapter? = null
-    private val realm = Realm.getDefaultInstance()
-    private var entryIds: List<Int> = ArrayList()
+    var adapter: FragmentStatePagerAdapter? = null
+    val realm: Realm by lazy { Realm.getDefaultInstance() }
+    var entryIds: List<Int> = ArrayList()
+    var currentEntry: Entry? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         entryIds = arguments.getIntegerArrayList(ENTRY_IDS) ?: ArrayList()
 
-        // Watch all realm objects for changes
-        realm.addChangeListener(this)
-
         adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
-            override fun getItem(position: Int): Fragment {
-                return DetailPageFragment.create(entryIds[position])
-            }
-
             override fun getCount(): Int {
                 return entryIds.size
+            }
+
+            override fun getItem(position: Int): Fragment {
+                return DetailPageFragment.create(entryIds[position])
             }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        realm.removeChangeListener(this)
         realm.close()
     }
 
@@ -50,40 +47,48 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
 
         binding.toolbar.setNavigationIcon(R.drawable.ic_arrow_back_control_24dp)
         binding.toolbar.setNavigationOnClickListener { activity.onBackPressed() }
-        binding.toolbar.inflateMenu(R.menu.detail_menu)
 
         binding.viewPager.adapter = adapter
         binding.viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
-
-            override fun onPageSelected(position: Int) {
-                updateMenu()
-                if (targetFragment is EntriesFragment) {
-                    (targetFragment as EntriesFragment).childDisplayedEntryId(entryIds[position])
-                }
-            }
-
+            override fun onPageSelected(position: Int) = selectedPage(position)
             override fun onPageScrollStateChanged(state: Int) {}
         })
         return binding
     }
 
+    private fun selectedPage(position: Int) {
+        val entryId = entryIds[position]
+        if (targetFragment is EntriesFragment) {
+            (targetFragment as EntriesFragment).childDisplayedEntryId(entryId)
+        }
+        currentEntry?.removeAllChangeListeners()
+        currentEntry = Entry.byId(realm, entryId).findFirstAsync()
+        currentEntry?.addChangeListener { e: Entry -> updateMenu(e) }
+    }
+
     override fun onResume() {
         super.onResume()
-        updateMenu()
         if (arguments.containsKey(INITIAL_ENTRY)) {
             val index = entryIds.indexOf(arguments.getInt(INITIAL_ENTRY))
             if (index >= 0 && index < entryIds.size) {
                 binding?.viewPager?.setCurrentItem(index, false)
+                selectedPage(index)
             }
             arguments.remove(INITIAL_ENTRY)
+        } else {
+            // need to fire selectedPage to render the menu properly
+            selectedPage(binding?.viewPager?.currentItem ?: 0)
         }
     }
 
-    internal fun updateMenu() {
+    internal fun updateMenu(entry: Entry) {
+        Timber.i("Selected $entry")
         val binding = binding ?: return
-        val entry = Entry.byId(realm, entryIds[binding.viewPager.currentItem]) ?: return
 
+        // reset menu completely every time, so we can be sure we never generate it in a weird half-state
+        binding.toolbar.menu.clear()
+        binding.toolbar.inflateMenu(R.menu.detail_menu)
         val starred = binding.toolbar.menu.findItem(R.id.menu_star)
         val star = ContextCompat.getDrawable(context, if (entry.starred) R.drawable.ic_star_24dp else R.drawable.ic_star_border_24dp)
         star.setTint(0xFFFFFFFF.toInt())
@@ -109,10 +114,6 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>(), RealmChange
             }
             true
         }
-    }
-
-    override fun onChange(element: Realm?) {
-        updateMenu()
     }
 
     companion object {

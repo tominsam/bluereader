@@ -4,7 +4,7 @@ import android.content.Context
 
 object Settings {
 
-    fun saveCredentials(context: Context, credentials: String) {
+    fun saveCredentials(context: Context, credentials: String?) {
         val prefs = context.getSharedPreferences("credentials", Context.MODE_PRIVATE)
         prefs.edit().putString("credentials", credentials).apply()
     }

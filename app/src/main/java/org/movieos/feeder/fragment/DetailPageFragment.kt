@@ -30,7 +30,7 @@ import java.text.DateFormat
 class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
     internal val entry: Entry by lazy {
-        Realm.getDefaultInstance().use { Entry.byId(it, arguments.getInt(ENTRY_ID))!! }
+        Realm.getDefaultInstance().use { Entry.byId(it, arguments.getInt(ENTRY_ID)).findFirstAsync() }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -54,14 +54,22 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         })
         registerForContextMenu(binding.webView)
 
-        binding.webView.loadDataWithBaseURL(null, template
-                .replace("{{body}}", entry.content ?: "")
-                .replace("{{title}}", Html.escapeHtml(entry.title ?: ""))
-                .replace("{{link}}", Html.escapeHtml(entry.url ?: ""))
-                .replace("{{author}}", Html.escapeHtml(entry.displayAuthor))
-                .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry.published)))
-                , "text/html", "utf-8", "")
+        entry.addChangeListener<Entry> { e ->
+            binding.webView.loadDataWithBaseURL(null, template
+                    .replace("{{body}}", e.content ?: "")
+                    .replace("{{title}}", Html.escapeHtml(e.title ?: ""))
+                    .replace("{{link}}", Html.escapeHtml(e.url ?: ""))
+                    .replace("{{author}}", Html.escapeHtml(e.displayAuthor))
+                    .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(e.published)))
+                    , "text/html", "utf-8", "")
+        }
+
         return binding
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        entry.removeAllChangeListeners()
     }
 
     override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
