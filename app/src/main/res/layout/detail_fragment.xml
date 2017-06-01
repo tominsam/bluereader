@@ -18,14 +18,6 @@
         android:orientation="vertical"
         >
 
-        <android.support.v7.widget.Toolbar
-            android:id="@+id/toolbar"
-            style="?toolbarStyle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            />
-
         <android.support.v4.view.ViewPager
             android:id="@+id/view_pager"
             android:layout_width="match_parent"
@@ -37,9 +29,23 @@
             style="?toolbarStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="end|center_vertical"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
             >
+
+            <ImageButton
+                android:id="@+id/toolbar_back"
+                style="@style/ToolbarButton"
+                android:contentDescription="Back"
+                android:src="@drawable/ic_arrow_back_control_24dp"
+                app:selected="@{entry.starred}"
+                />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                />
 
             <ImageButton
                 android:id="@+id/toolbar_share"
