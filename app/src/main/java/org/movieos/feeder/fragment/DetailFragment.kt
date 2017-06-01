@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentStatePagerAdapter
-import android.support.v4.content.ContextCompat
 import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -85,34 +84,46 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
     internal fun updateMenu(entry: Entry) {
         Timber.i("Selected $entry")
         val binding = binding ?: return
+        binding.entry = entry
 
         // reset menu completely every time, so we can be sure we never generate it in a weird half-state
         binding.toolbar.menu.clear()
-        binding.toolbar.inflateMenu(R.menu.detail_menu)
-        val starred = binding.toolbar.menu.findItem(R.id.menu_star)
-        val star = ContextCompat.getDrawable(context, if (entry.starred) R.drawable.ic_star_24dp else R.drawable.ic_star_border_24dp)
-        star.setTint(0xFFFFFFFF.toInt())
-        starred.icon = star
+//        binding.toolbar.inflateMenu(R.menu.detail_menu)
+//        val starred = binding.toolbar.menu.findItem(R.id.menu_star)
+//        val star = ContextCompat.getDrawable(context, if (entry.starred) R.drawable.ic_star_24dp else R.drawable.ic_star_border_24dp)
+//        star.setTint(0xFFFFFFFF.toInt())
+//        starred.icon = star
 
-        val unread = binding.toolbar.menu.findItem(R.id.menu_unread)
-        val circle = ContextCompat.getDrawable(context, if (entry.unread) R.drawable.ic_remove_circle_black_24dp else R.drawable.ic_remove_circle_outline_black_24dp)
-        circle.setTint(0xFFFFFFFF.toInt())
-        unread.icon = circle
+//        val unread = binding.toolbar.menu.findItem(R.id.menu_unread)
+//        val circle = ContextCompat.getDrawable(context, if (entry.unread) R.drawable.ic_remove_circle_black_24dp else R.drawable.ic_remove_circle_outline_black_24dp)
+//        circle.setTint(0xFFFFFFFF.toInt())
+//        unread.icon = circle
 
-        binding.toolbar.setOnMenuItemClickListener {
-            when (it.itemId) {
-                R.id.menu_star -> Entry.setStarred(context, realm, entry, !entry.starred)
-                R.id.menu_unread -> Entry.setUnread(context, realm, entry, !entry.unread)
-                R.id.menu_open -> Web.openInBrowser(activity, entry.url)
-                R.id.menu_share -> {
-                    val shareIntent = Intent(Intent.ACTION_SEND)
-                    shareIntent.type = "text/plain"
-                    shareIntent.putExtra(Intent.EXTRA_TEXT, entry.url)
-                    val chooser = Intent.createChooser(shareIntent, null)
-                    startActivity(chooser)
-                }
-            }
-            true
+//        binding.toolbar.setOnMenuItemClickListener {
+//            when (it.itemId) {
+//                R.id.menu_star -> Entry.setStarred(context, realm, entry, !entry.starred)
+//                R.id.menu_unread -> Entry.setUnread(context, realm, entry, !entry.unread)
+//                R.id.menu_open -> Web.openInBrowser(activity, entry.url)
+//                R.id.menu_share -> {
+//                    val shareIntent = Intent(Intent.ACTION_SEND)
+//                    shareIntent.type = "text/plain"
+//                    shareIntent.putExtra(Intent.EXTRA_TEXT, entry.url)
+//                    val chooser = Intent.createChooser(shareIntent, null)
+//                    startActivity(chooser)
+//                }
+//            }
+//            true
+//        }
+
+        binding.toolbarStarred.setOnClickListener { Entry.setStarred(context, realm, entry, !entry.starred) }
+        binding.toolbarUnread.setOnClickListener { Entry.setUnread(context, realm, entry, !entry.unread) }
+        binding.toolbarOpen.setOnClickListener { Web.openInBrowser(activity, entry.url) }
+        binding.toolbarShare.setOnClickListener {
+            val shareIntent = Intent(Intent.ACTION_SEND)
+            shareIntent.type = "text/plain"
+            shareIntent.putExtra(Intent.EXTRA_TEXT, entry.url)
+            val chooser = Intent.createChooser(shareIntent, null)
+            startActivity(chooser)
         }
     }
 

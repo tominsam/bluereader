@@ -39,6 +39,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 >
+
                 <android.support.v7.widget.RecyclerView
                     android:id="@+id/recycler_view"
                     android:layout_width="match_parent"
@@ -51,13 +52,14 @@
                 android:id="@+id/empty"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#FFFFFFFF"
+                android:background="@color/background"
                 >
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
                     android:layout_gravity="center"
+                    android:gravity="center"
                     android:text="No entries"
                     android:textAppearance="@style/text_title"
                     />
@@ -65,56 +67,36 @@
         </FrameLayout>
 
         <LinearLayout
+            style="?toolbarStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/primary"
             android:gravity="center"
             android:orientation="horizontal"
-            android:theme="@style/AppTheme.ActionBarTheme"
             >
 
             <ImageButton
                 android:id="@+id/state_starred"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:layout_marginStart="16dp"
-                android:background="?selectableItemBackgroundBorderless"
+                style="@style/ToolbarButton"
                 android:contentDescription="View starred entries"
-                android:minHeight="48dp"
-                android:minWidth="48dp"
                 android:src="@drawable/selectable_starred"
-                android:tint="@color/view_state_statelist"
                 app:selected="@{viewType == ViewType.STARRED}"
                 />
 
             <ImageButton
                 android:id="@+id/state_unread"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:layout_marginStart="16dp"
-                android:background="?selectableItemBackgroundBorderless"
+                style="@style/ToolbarButton"
+                android:layout_marginEnd="32dp"
+                android:layout_marginStart="32dp"
                 android:contentDescription="View unread entries"
-                android:minHeight="48dp"
-                android:minWidth="48dp"
                 android:src="@drawable/selectable_unread"
-                android:tint="@color/view_state_statelist"
                 app:selected="@{viewType == ViewType.UNREAD}"
                 />
 
             <ImageButton
                 android:id="@+id/state_all"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:layout_marginStart="16dp"
-                android:background="?selectableItemBackgroundBorderless"
+                style="@style/ToolbarButton"
                 android:contentDescription="View all entries"
-                android:minHeight="48dp"
-                android:minWidth="48dp"
                 android:src="@drawable/selectable_all"
-                android:tint="@color/view_state_statelist"
                 app:selected="@{viewType == ViewType.ALL}"
                 />
 

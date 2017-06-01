@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     >
+
+    <data>
+
+        <variable
+            name="entry"
+            type="org.movieos.feeder.model.Entry"
+            />
+    </data>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,6 +23,7 @@
             style="?toolbarStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             />
 
         <android.support.v4.view.ViewPager
@@ -22,6 +32,51 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             />
+
+        <LinearLayout
+            style="?toolbarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <ImageButton
+                android:id="@+id/toolbar_share"
+                style="@style/ToolbarButton"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Share"
+                android:src="@drawable/ic_share_control_24dp"
+                />
+
+            <ImageButton
+                android:id="@+id/toolbar_open"
+                style="@style/ToolbarButton"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Open in browser"
+                android:src="@drawable/ic_open_in_browser_control_24dp"
+                />
+
+            <ImageButton
+                android:id="@+id/toolbar_starred"
+                style="@style/ToolbarButton"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Entry is starred"
+                android:src="@drawable/selectable_starred"
+                app:selected="@{entry.starred}"
+                />
+
+            <ImageButton
+                android:id="@+id/toolbar_unread"
+                style="@style/ToolbarButton"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Entry is unread"
+                android:src="@drawable/selectable_unread"
+                app:selected="@{entry.unread}"
+                />
+
+        </LinearLayout>
+
 
     </LinearLayout>
 </layout>

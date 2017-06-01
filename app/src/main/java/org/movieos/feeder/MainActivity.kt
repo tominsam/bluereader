@@ -12,6 +12,7 @@ import org.movieos.feeder.fragment.EntriesFragment
 import org.movieos.feeder.fragment.LoginFragment
 import org.movieos.feeder.utilities.Settings
 import org.movieos.feeder.utilities.SyncTask
+import timber.log.Timber
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedListener {
 
@@ -27,6 +28,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.AppTheme)
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         if (savedInstanceState == null) {
@@ -56,7 +59,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
     }
 
     override fun onConnectionFailed(p0: ConnectionResult) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        // No smart lock, don't really care much
+        Timber.i("Google client connection failed: $p0")
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

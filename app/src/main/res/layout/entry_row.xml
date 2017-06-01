@@ -30,7 +30,7 @@
             android:layout_marginTop="12dp"
             android:text="@{entry.title}"
             android:textAppearance="@style/text_title"
-            android:textColor="@color/primary_text"
+            android:textColor="?android:textColorPrimary"
             app:bold="@{entry.unread}"
             tools:text="Entry title"
             />
@@ -44,7 +44,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
             android:text="@{entry.displayAuthor}"
-            android:textColor="@color/secondary_text"
+            android:textColor="?android:textColorSecondary"
             tools:text="Entry author"
             />
 
@@ -58,7 +58,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
             android:layout_toStartOf="@+id/star"
-            android:textColor="@color/secondary_text"
+            android:textColor="?android:textColorSecondary"
             app:dateText="@{entry.published}"
             tools:text="Entry published"
             />
