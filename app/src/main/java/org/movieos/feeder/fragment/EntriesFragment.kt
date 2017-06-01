@@ -69,8 +69,6 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 }
             }
         }
-
-        setViewType(viewType, false)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -80,8 +78,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): EntriesFragmentBinding {
         val binding = EntriesFragmentBinding.inflate(inflater, container, false)
-        binding.viewType = viewType
         binding.recyclerView.adapter = adapter
+        binding.recyclerView.itemAnimator = null
+
         binding.toolbar.inflateMenu(R.menu.entries_menu)
         binding.toolbar.setOnMenuItemClickListener { item: MenuItem ->
             when (item.itemId) {
@@ -102,9 +101,18 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             SyncTask.sync(activity, true, false)
         }
 
-        binding.stateUnread.setOnClickListener { setViewType(Entry.ViewType.UNREAD, true) }
-        binding.stateStarred.setOnClickListener { setViewType(Entry.ViewType.STARRED, true) }
-        binding.stateAll.setOnClickListener { setViewType(Entry.ViewType.ALL, true) }
+        binding.bottomNavigation.setOnNavigationItemSelectedListener {
+            when (it.itemId) {
+                R.id.menu_unread -> setViewType(Entry.ViewType.UNREAD, true)
+                R.id.menu_starred -> setViewType(Entry.ViewType.STARRED, true)
+                R.id.menu_all -> setViewType(Entry.ViewType.ALL, true)
+            }
+            true // mark as selected
+        }
+
+        binding.bottomNavigation.setOnNavigationItemReselectedListener {
+            binding.recyclerView.smoothScrollToPosition(0)
+        }
 
         if (SyncState.latest(realm) == null) {
             // first run / first sync
@@ -191,7 +199,13 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         val currentIds = if (this.viewType == viewType && !clearState) entries?.map{ it.id } else null
 
         this.viewType = viewType
-        binding?.viewType = this.viewType
+
+        val select = when (viewType) {
+            Entry.ViewType.UNREAD -> R.id.menu_unread
+            Entry.ViewType.STARRED -> R.id.menu_starred
+            Entry.ViewType.ALL -> R.id.menu_all
+        }
+        //binding?.bottomNavigation?.selectedItemId = select
 
         entries?.removeAllChangeListeners()
         entries = entries(realm, this.viewType, currentIds)
@@ -206,8 +220,6 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     fun entries(realm: Realm, viewType: Entry.ViewType, currently: List<Int>?): RealmResults<Entry> {
-        // TODO bug, the first fime we build this it' sa raw query. So if we mark something as
-        // read before we rebuild the list for any reason, that entry will dissapear.
         Timber.i("currently is $currently")
         val entries: RealmQuery<Entry> = when (viewType) {
             Entry.ViewType.UNREAD ->
@@ -217,7 +229,11 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             Entry.ViewType.ALL ->
                 realm.where(Entry::class.java)
         }
-        currently?.forEach {
+        if (currently == null) {
+            return entries(realm, viewType, entries.findAll().map{it.id})
+        }
+
+        currently.forEach {
             entries.or().equalTo("id", it)
         }
         return entries.findAllSortedAsync("published", io.realm.Sort.DESCENDING)

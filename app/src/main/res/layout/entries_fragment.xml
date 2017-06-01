@@ -4,16 +4,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     >
 
-    <data>
-
-        <variable
-            name="viewType"
-            type="org.movieos.feeder.model.Entry.ViewType"
-            />
-
-        <import type="org.movieos.feeder.model.Entry.ViewType"/>
-    </data>
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -66,41 +56,16 @@
             </FrameLayout>
         </FrameLayout>
 
-        <LinearLayout
-            style="?toolbarStyle"
+        <android.support.design.widget.BottomNavigationView
+            android:id="@+id/bottom_navigation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="horizontal"
-            >
-
-            <ImageButton
-                android:id="@+id/state_starred"
-                style="@style/ToolbarButton"
-                android:contentDescription="View starred entries"
-                android:src="@drawable/selectable_starred"
-                app:selected="@{viewType == ViewType.STARRED}"
-                />
-
-            <ImageButton
-                android:id="@+id/state_unread"
-                style="@style/ToolbarButton"
-                android:layout_marginEnd="32dp"
-                android:layout_marginStart="32dp"
-                android:contentDescription="View unread entries"
-                android:src="@drawable/selectable_unread"
-                app:selected="@{viewType == ViewType.UNREAD}"
-                />
-
-            <ImageButton
-                android:id="@+id/state_all"
-                style="@style/ToolbarButton"
-                android:contentDescription="View all entries"
-                android:src="@drawable/selectable_all"
-                app:selected="@{viewType == ViewType.ALL}"
-                />
-
-        </LinearLayout>
+            android:theme="@style/AppTheme.ActionBarTheme"
+            android:background="@color/primary"
+            app:itemIconTint="?colorControlNormal"
+            app:itemTextColor="?colorControlNormal"
+            app:menu="@menu/entries_tabs"
+            />
 
 
     </LinearLayout>
