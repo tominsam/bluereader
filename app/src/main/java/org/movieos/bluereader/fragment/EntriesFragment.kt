@@ -14,8 +14,8 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.MainActivity
+import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.R
 import org.movieos.bluereader.databinding.EntriesFragmentBinding
 import org.movieos.bluereader.databinding.EntryRowBinding
@@ -99,6 +99,12 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         binding.swipeRefreshLayout.setOnRefreshListener {
             binding.toolbar.menu?.findItem(R.id.menu_refresh)?.isEnabled = false
             SyncTask.sync(activity, true, false)
+        }
+
+        binding.bottomNavigation.selectedItemId = when(viewType) {
+            Entry.ViewType.UNREAD -> R.id.menu_unread
+            Entry.ViewType.STARRED -> R.id.menu_starred
+            Entry.ViewType.ALL -> R.id.menu_unread
         }
 
         binding.bottomNavigation.setOnNavigationItemSelectedListener {
@@ -196,16 +202,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     private fun setViewType(viewType: Entry.ViewType, clearState: Boolean) {
         // If we're keeping the same viewtype, then never _remove_ entries
-        val currentIds = if (this.viewType == viewType && !clearState) entries?.map{ it.id } else null
+        val currentIds = if (!clearState) entries?.map{ it.id } else null
 
         this.viewType = viewType
-
-        val select = when (viewType) {
-            Entry.ViewType.UNREAD -> R.id.menu_unread
-            Entry.ViewType.STARRED -> R.id.menu_starred
-            Entry.ViewType.ALL -> R.id.menu_all
-        }
-        //binding?.bottomNavigation?.selectedItemId = select
 
         entries?.removeAllChangeListeners()
         entries = entries(realm, this.viewType, currentIds)

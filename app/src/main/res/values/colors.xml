@@ -4,14 +4,7 @@
     <color name="primary_dark">#1976D2</color>
     <color name="primary_light">#BBDEFB</color>
     <color name="accent">#607D8B</color>
-    <color name="primary_text">#212121</color>
-    <color name="secondary_text">#757575</color>
-    <color name="icons">#FFFFFF</color>
-    <color name="divider">#BDBDBD</color>
 
     <color name="star_filled">#FFFFDF00</color>
-    <color name="star_border">#FF757575</color>
-
-    <color name="toolbar_selected">#FFFFFFFF</color>
-    <color name="toolbar_default">#FFEEEEEE</color>
+    <color name="star_border">#FF666666</color>
 </resources>

@@ -37,7 +37,8 @@
                 android:id="@+id/toolbar_back"
                 style="@style/ToolbarButton"
                 android:contentDescription="@string/action_back"
-                android:src="@drawable/ic_arrow_back_control_24dp"
+                android:src="@drawable/ic_arrow_back_24dp"
+                android:tint="?colorControlNormal"
                 app:selected="@{entry.starred}"
                 />
 
@@ -52,7 +53,8 @@
                 style="@style/ToolbarButton"
                 android:layout_marginEnd="8dp"
                 android:contentDescription="@string/action_share"
-                android:src="@drawable/ic_share_control_24dp"
+                android:src="@drawable/ic_share_24dp"
+                android:tint="?colorControlNormal"
                 />
 
             <ImageButton
@@ -60,7 +62,8 @@
                 style="@style/ToolbarButton"
                 android:layout_marginEnd="8dp"
                 android:contentDescription="@string/action_open"
-                android:src="@drawable/ic_open_in_browser_control_24dp"
+                android:src="@drawable/ic_open_in_browser_24dp"
+                android:tint="?colorControlNormal"
                 />
 
             <ImageButton
@@ -68,7 +71,8 @@
                 style="@style/ToolbarButton"
                 android:layout_marginEnd="8dp"
                 android:contentDescription="@string/is_starred"
-                android:src="@drawable/selectable_starred"
+                android:src="@drawable/statelist_starred"
+                android:tint="?colorControlNormal"
                 app:selected="@{entry.starred}"
                 />
 
@@ -77,7 +81,8 @@
                 style="@style/ToolbarButton"
                 android:layout_marginEnd="8dp"
                 android:contentDescription="@string/is_unread"
-                android:src="@drawable/selectable_unread"
+                android:src="@drawable/statelist_unread"
+                android:tint="?colorControlNormal"
                 app:selected="@{entry.unread}"
                 />
 

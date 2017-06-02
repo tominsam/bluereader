@@ -16,6 +16,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:title="@string/app_name"
+            app:titleTextAppearance="@style/text_toolbar_title"
+            app:subtitleTextAppearance="@style/text_toolbar_subtitle"
+            app:titleTextColor="?android:textColorPrimary"
+            app:subtitleTextColor="?android:textColorSecondary"
             />
 
         <FrameLayout
@@ -60,10 +64,10 @@
             android:id="@+id/bottom_navigation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:theme="@style/AppTheme.ActionBarTheme"
             android:background="@color/primary"
-            app:itemIconTint="?colorControlNormal"
-            app:itemTextColor="?colorControlNormal"
+            android:theme="@style/AppTheme.ActionBarTheme"
+            app:itemIconTint="@color/statelist_toolbar"
+            app:itemTextColor="@color/statelist_toolbar"
             app:menu="@menu/entries_tabs"
             />
 

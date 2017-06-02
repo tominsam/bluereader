@@ -5,17 +5,17 @@
     <item
         android:id="@+id/menu_starred"
         android:title="@string/tab_view_starred"
-        android:icon="@drawable/selectable_starred"
+        android:icon="@drawable/statelist_starred"
         />
     <item
         android:id="@+id/menu_unread"
         android:title="@string/tab_view_unread"
-        android:icon="@drawable/selectable_unread"
+        android:icon="@drawable/statelist_unread"
         />
     <item
         android:id="@+id/menu_all"
         android:title="@string/tab_view_all"
-        android:icon="@drawable/selectable_all"
+        android:icon="@drawable/statelist_all"
         />
 
 </menu>

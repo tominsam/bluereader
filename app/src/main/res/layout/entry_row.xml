@@ -73,8 +73,8 @@
             android:contentDescription="@string/action_star"
             android:minHeight="48dp"
             android:minWidth="48dp"
-            android:src="@drawable/selectable_starred"
-            android:tint="@color/star_statelist"
+            android:src="@drawable/statelist_starred"
+            android:tint="@color/statelist_starred"
             app:selected="@{entry.starred}"
             />
 
