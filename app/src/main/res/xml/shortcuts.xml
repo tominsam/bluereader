@@ -1,0 +1,22 @@
+<shortcuts
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:targetApi="n_mr1"
+    >
+    <!-- TODO -->
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_star_24dp"
+        android:shortcutDisabledMessage="@string/shortcut_disabled"
+        android:shortcutId="compose"
+        android:shortcutLongLabel="@string/shortcut_starred"
+        android:shortcutShortLabel="@string/shortcut_starred"
+        >
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="org.movieos.bluereader.MainActivity"
+            android:targetPackage="org.movieos.bluereader"
+            />
+    </shortcut>
+    <!-- Specify more shortcuts here. -->
+</shortcuts>

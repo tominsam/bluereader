@@ -70,7 +70,7 @@
             android:layout_alignParentBottom="true"
             android:layout_alignParentEnd="true"
             android:background="?selectableItemBackgroundBorderless"
-            android:contentDescription="Save entry"
+            android:contentDescription="@string/action_star"
             android:minHeight="48dp"
             android:minWidth="48dp"
             android:src="@drawable/selectable_starred"

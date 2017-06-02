@@ -276,7 +276,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
             val state = SyncState.latest(realm)
             if (state == null || state.isStale || force || pushOnly) {
                 Timber.i("Syncing")
-                SyncTask(context, pushOnly).start()
+                SyncTask(context.applicationContext, pushOnly).start()
             } else {
                 Timber.i("Not syncing")
             }

@@ -36,7 +36,7 @@
             <ImageButton
                 android:id="@+id/toolbar_back"
                 style="@style/ToolbarButton"
-                android:contentDescription="Back"
+                android:contentDescription="@string/action_back"
                 android:src="@drawable/ic_arrow_back_control_24dp"
                 app:selected="@{entry.starred}"
                 />
@@ -51,7 +51,7 @@
                 android:id="@+id/toolbar_share"
                 style="@style/ToolbarButton"
                 android:layout_marginEnd="8dp"
-                android:contentDescription="Share"
+                android:contentDescription="@string/action_share"
                 android:src="@drawable/ic_share_control_24dp"
                 />
 
@@ -59,7 +59,7 @@
                 android:id="@+id/toolbar_open"
                 style="@style/ToolbarButton"
                 android:layout_marginEnd="8dp"
-                android:contentDescription="Open in browser"
+                android:contentDescription="@string/action_open"
                 android:src="@drawable/ic_open_in_browser_control_24dp"
                 />
 
@@ -67,7 +67,7 @@
                 android:id="@+id/toolbar_starred"
                 style="@style/ToolbarButton"
                 android:layout_marginEnd="8dp"
-                android:contentDescription="Entry is starred"
+                android:contentDescription="@string/is_starred"
                 android:src="@drawable/selectable_starred"
                 app:selected="@{entry.starred}"
                 />
@@ -76,7 +76,7 @@
                 android:id="@+id/toolbar_unread"
                 style="@style/ToolbarButton"
                 android:layout_marginEnd="8dp"
-                android:contentDescription="Entry is unread"
+                android:contentDescription="@string/is_unread"
                 android:src="@drawable/selectable_unread"
                 app:selected="@{entry.unread}"
                 />

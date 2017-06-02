@@ -26,7 +26,7 @@
             android:layout_marginStart="40dp"
             android:layout_marginTop="40dp"
             android:gravity="center"
-            android:text="Log in to Feedbin"
+            android:text="@string/login_title"
             android:textAppearance="@style/text_title"
             />
 
@@ -42,7 +42,7 @@
                 android:id="@+id/email"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Email"
+                android:hint="@string/login_email_hint"
                 android:inputType="textEmailAddress"
                 />
         </android.support.design.widget.TextInputLayout>
@@ -60,7 +60,7 @@
                 android:id="@+id/password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Password"
+                android:hint="@string/login_password_hint"
                 android:inputType="textPassword"
                 />
         </android.support.design.widget.TextInputLayout>
@@ -72,7 +72,7 @@
             android:layout_marginEnd="40dp"
             android:layout_marginStart="40dp"
             android:layout_marginTop="40dp"
-            android:text="Log in"
+            android:text="@string/login_button_text"
             />
 
     </LinearLayout>

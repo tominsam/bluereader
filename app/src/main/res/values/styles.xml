@@ -21,6 +21,7 @@
     </style>
 
     <style name="AppTheme.ActionBarTheme" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="popupTheme">@style/ThemeOverlay.AppCompat.Light</item>
     </style>
 
     <style name="AppTheme.ButtonStyle" parent="Widget.AppCompat.Button.Colored">

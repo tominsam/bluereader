@@ -1,3 +1,28 @@
 <resources>
     <string name="app_name">BlueReader</string>
+
+    <string name="tab_view_all">All</string>
+    <string name="tab_view_unread">Unread</string>
+    <string name="tab_view_starred">Starred</string>
+
+    <string name="menu_log_out">Log out</string>
+    <string name="menu_refresh">Refresh</string>
+
+    <string name="shortcut_disabled">Disabled</string>
+    <string name="shortcut_starred">Starred</string>
+    <string name="shortcut_unread">Unread</string>
+
+    <string name="action_back">Back</string>
+    <string name="action_share">Share</string>
+    <string name="action_open">Open in browser</string>
+    <string name="action_star">Star entry</string>
+
+    <string name="is_starred">Entry is starred</string>
+    <string name="is_unread">Entry is unread</string>
+    <string name="no_entries">No entries</string>
+
+    <string name="login_title">Log in to Feedbin</string>
+    <string name="login_email_hint">Email</string>
+    <string name="login_password_hint">Password</string>
+    <string name="login_button_text">Log in</string>
 </resources>

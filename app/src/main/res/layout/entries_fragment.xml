@@ -50,7 +50,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
-                    android:text="No entries"
+                    android:text="@string/no_entries"
                     android:textAppearance="@style/text_title"
                     />
             </FrameLayout>
