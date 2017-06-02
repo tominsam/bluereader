@@ -146,7 +146,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     fun syncStatus(status: SyncTask.SyncStatus) {
         if (status.isComplete) {
             if (binding?.swipeRefreshLayout?.isRefreshing ?: false) {
-                //currentIds.clear()
+                currentIds.clear()
             }
             binding?.swipeRefreshLayout?.isRefreshing = false
             displaySyncTime()
