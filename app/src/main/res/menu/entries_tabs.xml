@@ -3,6 +3,11 @@
       xmlns:app="http://schemas.android.com/apk/res-auto"
     >
     <item
+        android:id="@+id/menu_feeds"
+        android:title="@string/tab_view_feeds"
+        android:icon="@drawable/statelist_feeds"
+        />
+    <item
         android:id="@+id/menu_starred"
         android:title="@string/tab_view_starred"
         android:icon="@drawable/statelist_starred"

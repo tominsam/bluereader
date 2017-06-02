@@ -9,7 +9,7 @@ import java.util.*
 
 @BindingAdapter("dateText")
 fun dateText(textView: TextView, date: Date) {
-    val format = DateFormat.getDateTimeInstance()
+    val format = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
     textView.text = format.format(date)
 }
 

@@ -7,4 +7,6 @@
 
     <color name="star_filled">#FFFFDF00</color>
     <color name="star_border">#FF666666</color>
+    <color name="background">#FFFFFFFF</color>
+    <color name="divider">#09000000</color>
 </resources>

@@ -42,6 +42,9 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
     var summary: String? = null
         internal set
 
+    val excerpt: String
+        get() = summary?.substring(0, Math.min(summary?.length ?: 0, 200)) ?: ""
+
     @Required
     @SerializedName("created_at")
     var createdAt: Date? = null
@@ -59,6 +62,7 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
     var subscription: Subscription? = null
 
     enum class ViewType {
+        FEEDS,
         UNREAD,
         STARRED,
         ALL

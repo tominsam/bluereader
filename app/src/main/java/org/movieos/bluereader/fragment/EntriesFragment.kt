@@ -4,7 +4,6 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.FragmentTransaction.TRANSIT_FRAGMENT_CLOSE
-import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -21,22 +20,36 @@ import org.movieos.bluereader.databinding.EntriesFragmentBinding
 import org.movieos.bluereader.databinding.EntryRowBinding
 import org.movieos.bluereader.model.Entry
 import org.movieos.bluereader.model.SyncState
-import org.movieos.bluereader.utilities.RealmAdapter
+import org.movieos.bluereader.model.Tagging
+import org.movieos.bluereader.utilities.BindingAdapter
 import org.movieos.bluereader.utilities.Settings
 import org.movieos.bluereader.utilities.SyncTask
 import timber.log.Timber
 import java.text.DateFormat
 
+
+val BUNDLE_CURRENT_IDS: String = "bundle_current_ids"
+
 class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
-    internal var adapter: RealmAdapter<Entry, EntryRowBinding>? = null
-    internal var currentEntry = -1
-    private val realm: Realm = Realm.getDefaultInstance()
-    private var firstBeforePause: Int = 0
-    private var lastBeforePause: Int = 0
+    internal val adapter = BindingAdapter()
+    private val realm = Realm.getDefaultInstance()
+    internal var viewType = Entry.ViewType.UNREAD
+    internal val entries: RealmResults<Entry>
+    internal val taggings: RealmResults<Tagging>
+    internal val currentIds: MutableSet<Int> = mutableSetOf()
 
-    internal var viewType: Entry.ViewType = Entry.ViewType.UNREAD
-    internal var entries: RealmResults<Entry>? = null
+    init {
+        entries = realm.where(Entry::class.java).findAllSortedAsync("published", io.realm.Sort.DESCENDING)
+        entries.addChangeListener { entries, changeset ->
+            render()
+        }
+
+        taggings = realm.where(Tagging::class.java).findAllSortedAsync("name", io.realm.Sort.DESCENDING)
+        taggings.addChangeListener { taggings, changeset ->
+            render()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,42 +57,21 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         if (savedInstanceState != null) {
             val viewType = savedInstanceState.getSerializable(VIEW_TYPE) as Entry.ViewType?
             this.viewType = viewType ?: this.viewType
+            currentIds.addAll(savedInstanceState.getIntegerArrayList(BUNDLE_CURRENT_IDS));
         }
 
-        adapter = object : RealmAdapter<Entry, EntryRowBinding>(EntryRowBinding::class.java, Entry::class.java) {
-            override fun onBindViewHolder(holder: RealmAdapter.FeedViewHolder<EntryRowBinding>, instance: Entry) {
-                holder.binding.entry = instance
-
-                holder.itemView.setOnClickListener {
-                    Entry.setUnread(context, realm, instance, false)
-                    val fragment = DetailFragment.create(ids, instance.id)
-                    fragment.setTargetFragment(this@EntriesFragment, 0)
-                    fragmentManager
-                            .beginTransaction()
-                            .setTransition(TRANSIT_FRAGMENT_CLOSE)
-                            .replace(R.id.main_content, fragment)
-                            .addToBackStack(null)
-                            .commit()
-                }
-
-                holder.binding.star.setOnClickListener { v ->
-                    val newState = !v.isSelected
-                    Entry.setStarred(context, realm, instance, newState)
-                    v.isSelected = newState
-                }
-            }
-        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putSerializable(VIEW_TYPE, viewType)
+        outState.putIntegerArrayList(BUNDLE_CURRENT_IDS, ArrayList(currentIds))
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): EntriesFragmentBinding {
         val binding = EntriesFragmentBinding.inflate(inflater, container, false)
         binding.recyclerView.adapter = adapter
-        binding.recyclerView.itemAnimator = null
+        //binding.recyclerView.itemAnimator = null
 
         binding.toolbar.inflateMenu(R.menu.entries_menu)
         binding.toolbar.setOnMenuItemClickListener { item: MenuItem ->
@@ -105,19 +97,26 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             Entry.ViewType.UNREAD -> R.id.menu_unread
             Entry.ViewType.STARRED -> R.id.menu_starred
             Entry.ViewType.ALL -> R.id.menu_unread
+            Entry.ViewType.FEEDS -> R.id.menu_feeds
         }
 
         binding.bottomNavigation.setOnNavigationItemSelectedListener {
             when (it.itemId) {
-                R.id.menu_unread -> setViewType(Entry.ViewType.UNREAD, true)
-                R.id.menu_starred -> setViewType(Entry.ViewType.STARRED, true)
-                R.id.menu_all -> setViewType(Entry.ViewType.ALL, true)
+                R.id.menu_unread -> setViewType(Entry.ViewType.UNREAD)
+                R.id.menu_starred -> setViewType(Entry.ViewType.STARRED)
+                R.id.menu_all -> setViewType(Entry.ViewType.ALL)
+                R.id.menu_feeds -> setViewType(Entry.ViewType.FEEDS)
             }
+            binding.recyclerView.scrollToPosition(0)
             true // mark as selected
         }
 
         binding.bottomNavigation.setOnNavigationItemReselectedListener {
-            binding.recyclerView.smoothScrollToPosition(0)
+            currentIds.clear()
+            render()
+            binding.recyclerView.postDelayed({
+                binding.recyclerView.smoothScrollToPosition(0)
+            }, 1)
         }
 
         if (SyncState.latest(realm) == null) {
@@ -131,48 +130,27 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     override fun onResume() {
         super.onResume()
         displaySyncTime()
-
-        // if we changed page in the detail view, scroll to minimally make that view visible.
-        // To do this we tracked the first and last visible rows before we left (because in this
-        // method we're not laid out yet), and will assume this has not changed. If the phone
-        // has rotated or resized we'll guess wrong here.
-        val binding = binding ?: return
-        if (currentEntry >= 0 && firstBeforePause >= 0 && lastBeforePause >= 0) {
-            if (currentEntry < firstBeforePause) {
-                binding.recyclerView.scrollToPosition(currentEntry)
-            } else if (currentEntry > lastBeforePause) {
-                binding.recyclerView.scrollToPosition(currentEntry - (lastBeforePause - firstBeforePause))
-            }
-            currentEntry = -1
-        }
-
-        setViewType(viewType, false)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        if (binding != null) {
-            val manager = binding!!.recyclerView.layoutManager as LinearLayoutManager
-            firstBeforePause = manager.findFirstCompletelyVisibleItemPosition()
-            lastBeforePause = manager.findLastCompletelyVisibleItemPosition()
-        }
+        render()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        entries.removeAllChangeListeners()
+        taggings.removeAllChangeListeners()
         realm.close()
         MainApplication.bus.unregister(this)
     }
-
-
 
     @Suppress("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun syncStatus(status: SyncTask.SyncStatus) {
         if (status.isComplete) {
-            setViewType(viewType, binding?.swipeRefreshLayout?.isRefreshing ?: false)
+            if (binding?.swipeRefreshLayout?.isRefreshing ?: false) {
+                //currentIds.clear()
+            }
             binding?.swipeRefreshLayout?.isRefreshing = false
             displaySyncTime()
+            render()
             binding?.toolbar?.menu?.findItem(R.id.menu_refresh)?.isEnabled = true
         } else {
             binding?.toolbar?.subtitle = status.status
@@ -200,22 +178,58 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         }
     }
 
-    private fun setViewType(viewType: Entry.ViewType, clearState: Boolean) {
-        // If we're keeping the same viewtype, then never _remove_ entries
-        val currentIds = if (!clearState) entries?.map{ it.id } else null
+    private fun setViewType(newViewType: Entry.ViewType) {
+        Timber.i("setting new view type $newViewType")
+        viewType = newViewType
+        currentIds.clear()
+        render()
+    }
 
-        this.viewType = viewType
-
-        entries?.removeAllChangeListeners()
-        entries = entries(realm, this.viewType, currentIds)
-        entries?.addChangeListener({ results, _ ->
-            adapter?.entries = results
-            if (results.size == 0) {
-                binding?.empty?.visibility = View.VISIBLE
-            } else {
-                binding?.empty?.visibility = View.GONE
+    private fun render() {
+        Timber.i("currentIds are $currentIds")
+        val builder = BindingAdapter.Builder()
+        // currentIds is a list of things we're _currently_ showing. We only ever add items
+        // to the visible list, except when we change view types, so that we return to a list
+        // from the detail view that looks the same even though the dataset got regenerated.
+        val visibleEntries = entries.filter {
+            it.id in currentIds || when (viewType) {
+                Entry.ViewType.FEEDS -> false
+                Entry.ViewType.ALL -> true
+                Entry.ViewType.UNREAD -> it.unread
+                Entry.ViewType.STARRED -> it.starred
             }
-        })
+        }
+        val entryIds = visibleEntries.map {it.id}
+        for (entry in visibleEntries) {
+            currentIds += entry.id
+            builder.addRow(EntryRowBinding::class.java, entry.id, { binding, view ->
+                binding.entry = entry
+                view.setOnClickListener {
+                    Entry.setUnread(context, realm, entry, false)
+                    val fragment = DetailFragment.create(entryIds, entry.id)
+                    fragment.setTargetFragment(this@EntriesFragment, 0)
+                    fragmentManager
+                            .beginTransaction()
+                            .setTransition(TRANSIT_FRAGMENT_CLOSE)
+                            .replace(R.id.main_content, fragment)
+                            .addToBackStack(null)
+                            .commit()
+                }
+
+                binding.star.setOnClickListener { v ->
+                    val newState = !v.isSelected
+                    Entry.setStarred(context, realm, entry, newState)
+                    v.isSelected = newState
+                }
+            })
+        }
+        adapter.fromBuilder(builder)
+
+        if (visibleEntries.isEmpty()) {
+            binding?.empty?.visibility = View.VISIBLE
+        } else {
+            binding?.empty?.visibility = View.GONE
+        }
     }
 
     fun entries(realm: Realm, viewType: Entry.ViewType, currently: List<Int>?): RealmResults<Entry> {
@@ -226,6 +240,8 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             Entry.ViewType.STARRED ->
                 realm.where(Entry::class.java).equalTo("starred", true)
             Entry.ViewType.ALL ->
+                realm.where(Entry::class.java)
+            Entry.ViewType.FEEDS ->
                 realm.where(Entry::class.java)
         }
         if (currently == null) {

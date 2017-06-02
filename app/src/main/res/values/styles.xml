@@ -29,7 +29,15 @@
     </style>
 
     <style name="text_title" parent="@android:style/TextAppearance.Widget.TextView">
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="text_body" parent="@android:style/TextAppearance.Widget.TextView">
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="text_small" parent="@android:style/TextAppearance.Widget.TextView">
+        <item name="android:textSize">12sp</item>
     </style>
 
     <style name="text_toolbar_title" parent="@android:style/TextAppearance.Widget.TextView">
@@ -48,5 +56,4 @@
         <item name="android:tint">@color/statelist_toolbar</item>
     </style>
 
-    <color name="background">#FFFFFFFF</color>
 </resources>
