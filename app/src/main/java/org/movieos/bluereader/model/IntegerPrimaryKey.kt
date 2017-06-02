@@ -1,4 +1,4 @@
-package org.movieos.feeder.model
+package org.movieos.bluereader.model
 
 interface IntegerPrimaryKey {
     val id: Int

@@ -1,4 +1,4 @@
-package org.movieos.feeder.model
+package org.movieos.bluereader.model
 
 import android.content.Context
 import android.os.Handler
@@ -9,7 +9,7 @@ import io.realm.RealmQuery
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import io.realm.annotations.Required
-import org.movieos.feeder.utilities.SyncTask
+import org.movieos.bluereader.utilities.SyncTask
 import java.util.*
 
 open class Entry : RealmObject(), IntegerPrimaryKey {

@@ -1,4 +1,4 @@
-package org.movieos.feeder
+package org.movieos.bluereader
 
 import android.content.Intent
 import android.os.Bundle
@@ -8,10 +8,10 @@ import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import io.realm.Realm
-import org.movieos.feeder.fragment.EntriesFragment
-import org.movieos.feeder.fragment.LoginFragment
-import org.movieos.feeder.utilities.Settings
-import org.movieos.feeder.utilities.SyncTask
+import org.movieos.bluereader.fragment.EntriesFragment
+import org.movieos.bluereader.fragment.LoginFragment
+import org.movieos.bluereader.utilities.Settings
+import org.movieos.bluereader.utilities.SyncTask
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedListener {

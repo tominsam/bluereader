@@ -1,1 +1,1 @@
-adb exec-out run-as org.movieos.feeder cat files/default.realm > default.realm
+adb exec-out run-as bluereader cat files/default.realm > default.realm

@@ -1,4 +1,4 @@
-package org.movieos.feeder
+package org.movieos.bluereader
 
 import android.webkit.WebView
 import io.realm.Realm
@@ -6,7 +6,7 @@ import io.realm.RealmConfiguration
 import org.greenrobot.eventbus.EventBus
 import timber.log.Timber
 
-class FeederApplication : android.app.Application() {
+class MainApplication : android.app.Application() {
 
     override fun onCreate() {
         super.onCreate()

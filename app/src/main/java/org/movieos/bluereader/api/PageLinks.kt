@@ -1,4 +1,4 @@
-package org.movieos.feeder.api
+package org.movieos.bluereader.api
 
 // Based on https://github.com/eclipse/egit-github/blob/master/org.eclipse.egit.github.core/src/org/eclipse/egit/github/core/client/PageLinks.java
 

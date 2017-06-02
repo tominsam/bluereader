@@ -1,4 +1,4 @@
-package org.movieos.feeder.fragment
+package org.movieos.bluereader.fragment
 
 import android.app.AlertDialog
 import android.content.Intent
@@ -14,16 +14,16 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import org.movieos.feeder.FeederApplication
-import org.movieos.feeder.MainActivity
-import org.movieos.feeder.R
-import org.movieos.feeder.databinding.EntriesFragmentBinding
-import org.movieos.feeder.databinding.EntryRowBinding
-import org.movieos.feeder.model.Entry
-import org.movieos.feeder.model.SyncState
-import org.movieos.feeder.utilities.RealmAdapter
-import org.movieos.feeder.utilities.Settings
-import org.movieos.feeder.utilities.SyncTask
+import org.movieos.bluereader.MainApplication
+import org.movieos.bluereader.MainActivity
+import org.movieos.bluereader.R
+import org.movieos.bluereader.databinding.EntriesFragmentBinding
+import org.movieos.bluereader.databinding.EntryRowBinding
+import org.movieos.bluereader.model.Entry
+import org.movieos.bluereader.model.SyncState
+import org.movieos.bluereader.utilities.RealmAdapter
+import org.movieos.bluereader.utilities.Settings
+import org.movieos.bluereader.utilities.SyncTask
 import timber.log.Timber
 import java.text.DateFormat
 
@@ -40,7 +40,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        FeederApplication.bus.register(this)
+        MainApplication.bus.register(this)
         if (savedInstanceState != null) {
             val viewType = savedInstanceState.getSerializable(VIEW_TYPE) as Entry.ViewType?
             this.viewType = viewType ?: this.viewType
@@ -155,7 +155,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     override fun onDestroy() {
         super.onDestroy()
         realm.close()
-        FeederApplication.bus.unregister(this)
+        MainApplication.bus.unregister(this)
     }
 
 

@@ -1,4 +1,4 @@
-package org.movieos.feeder.fragment
+package org.movieos.bluereader.fragment
 
 import android.content.Intent
 import android.os.Bundle
@@ -8,9 +8,9 @@ import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import io.realm.Realm
-import org.movieos.feeder.databinding.DetailFragmentBinding
-import org.movieos.feeder.model.Entry
-import org.movieos.feeder.utilities.Web
+import org.movieos.bluereader.databinding.DetailFragmentBinding
+import org.movieos.bluereader.model.Entry
+import org.movieos.bluereader.utilities.Web
 import timber.log.Timber
 
 class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {

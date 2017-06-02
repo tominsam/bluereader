@@ -1,4 +1,4 @@
-package org.movieos.feeder.fragment
+package org.movieos.bluereader.fragment
 
 import android.annotation.SuppressLint
 import android.content.ComponentName
@@ -19,9 +19,9 @@ import android.webkit.WebView
 import android.webkit.WebView.HitTestResult
 import android.webkit.WebViewClient
 import io.realm.Realm
-import org.movieos.feeder.R
-import org.movieos.feeder.databinding.DetailPageFragmentBinding
-import org.movieos.feeder.model.Entry
+import org.movieos.bluereader.R
+import org.movieos.bluereader.databinding.DetailPageFragmentBinding
+import org.movieos.bluereader.model.Entry
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.text.DateFormat

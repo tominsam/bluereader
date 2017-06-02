@@ -1,11 +1,11 @@
-package org.movieos.feeder.utilities
+package org.movieos.bluereader.utilities
 
 import android.databinding.ViewDataBinding
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import io.realm.RealmObject
-import org.movieos.feeder.model.IntegerPrimaryKey
+import org.movieos.bluereader.model.IntegerPrimaryKey
 import java.lang.reflect.InvocationTargetException
 
 

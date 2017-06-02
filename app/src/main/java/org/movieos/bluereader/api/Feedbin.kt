@@ -1,15 +1,15 @@
-package org.movieos.feeder.api
+package org.movieos.bluereader.api
 
 import android.content.Context
 import android.text.TextUtils
 import com.google.gson.*
 import okhttp3.Cache
 import okhttp3.OkHttpClient
-import org.movieos.feeder.BuildConfig
-import org.movieos.feeder.model.Entry
-import org.movieos.feeder.model.Subscription
-import org.movieos.feeder.model.Tagging
-import org.movieos.feeder.utilities.Settings
+import org.movieos.bluereader.BuildConfig
+import org.movieos.bluereader.model.Entry
+import org.movieos.bluereader.model.Subscription
+import org.movieos.bluereader.model.Tagging
+import org.movieos.bluereader.utilities.Settings
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Retrofit

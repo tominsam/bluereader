@@ -1,10 +1,10 @@
-package org.movieos.feeder.utilities
+package org.movieos.bluereader.utilities
 
 import android.app.Activity
 import android.net.Uri
 import android.support.customtabs.CustomTabsIntent
 import android.support.v4.content.ContextCompat
-import org.movieos.feeder.R
+import org.movieos.bluereader.R
 
 class Web {
 

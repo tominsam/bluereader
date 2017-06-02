@@ -1,16 +1,16 @@
-package org.movieos.feeder.utilities
+package org.movieos.bluereader.utilities
 
 import android.content.Context
 import android.os.AsyncTask
 import io.realm.Realm
 import io.realm.Sort
-import org.movieos.feeder.FeederApplication
-import org.movieos.feeder.api.Feedbin
-import org.movieos.feeder.api.PageLinks
-import org.movieos.feeder.model.Entry
-import org.movieos.feeder.model.LocalState
-import org.movieos.feeder.model.Subscription
-import org.movieos.feeder.model.SyncState
+import org.movieos.bluereader.MainApplication
+import org.movieos.bluereader.api.Feedbin
+import org.movieos.bluereader.api.PageLinks
+import org.movieos.bluereader.model.Entry
+import org.movieos.bluereader.model.LocalState
+import org.movieos.bluereader.model.Subscription
+import org.movieos.bluereader.model.SyncState
 import retrofit2.Response
 import timber.log.Timber
 import java.io.IOException
@@ -57,12 +57,12 @@ class SyncTask private constructor(internal val context: Context, internal val p
 
     override fun onProgressUpdate(vararg values: String) {
         for (value in values) {
-            FeederApplication.bus.post(SyncStatus(false, value))
+            MainApplication.bus.post(SyncStatus(false, value))
         }
     }
 
     override fun onPostExecute(syncStatus: SyncStatus) {
-        FeederApplication.bus.post(syncStatus)
+        MainApplication.bus.post(syncStatus)
     }
 
     @Throws(IOException::class)

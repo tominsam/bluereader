@@ -1,4 +1,4 @@
-package org.movieos.feeder.model
+package org.movieos.bluereader.model
 
 import com.google.gson.annotations.SerializedName
 

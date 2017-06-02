@@ -9,7 +9,7 @@
 
         <variable
             name="entry"
-            type="org.movieos.feeder.model.Entry"
+            type="org.movieos.bluereader.model.Entry"
             />
     </data>
 

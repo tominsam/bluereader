@@ -1,4 +1,4 @@
-package org.movieos.feeder.fragment
+package org.movieos.bluereader.fragment
 
 import android.app.Activity
 import android.content.Intent
@@ -9,11 +9,11 @@ import com.google.android.gms.auth.api.credentials.Credential
 import com.google.android.gms.auth.api.credentials.CredentialRequest
 import com.google.android.gms.common.api.Status
 import okhttp3.Credentials
-import org.movieos.feeder.MainActivity
-import org.movieos.feeder.R
-import org.movieos.feeder.api.Feedbin
-import org.movieos.feeder.databinding.LoginFragmentBinding
-import org.movieos.feeder.utilities.Settings
+import org.movieos.bluereader.MainActivity
+import org.movieos.bluereader.R
+import org.movieos.bluereader.api.Feedbin
+import org.movieos.bluereader.databinding.LoginFragmentBinding
+import org.movieos.bluereader.utilities.Settings
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response

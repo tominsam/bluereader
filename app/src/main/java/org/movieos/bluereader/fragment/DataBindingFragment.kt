@@ -1,4 +1,4 @@
-package org.movieos.feeder.fragment
+package org.movieos.bluereader.fragment
 
 import android.databinding.ViewDataBinding
 import android.os.Bundle

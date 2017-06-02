@@ -1,4 +1,4 @@
-package org.movieos.feeder.utilities
+package org.movieos.bluereader.utilities
 
 import android.content.Context
 
