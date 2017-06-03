@@ -7,6 +7,9 @@ buildscript {
 
     repositories {
         jcenter()
+        maven {
+            url 'https://maven.google.com'
+        }
     }
     dependencies {
         classpath "com.android.tools.build:gradle:$android_plugin_version"

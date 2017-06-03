@@ -152,6 +152,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         MainApplication.bus.unregister(this)
     }
 
+    fun onBackPressed(): Boolean {
+        if (viewType != Entry.ViewType.FEEDS && binding != null) {
+            binding?.bottomNavigation?.selectedItemId = R.id.menu_feeds
+            return true
+        }
+        return false
+    }
+
     @Suppress("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun syncStatus(status: SyncTask.SyncStatus) {

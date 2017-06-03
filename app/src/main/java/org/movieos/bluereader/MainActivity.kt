@@ -68,4 +68,14 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
         val fragment = supportFragmentManager.findFragmentById(R.id.main_content)
         fragment.onActivityResult(requestCode, resultCode, data)
     }
+
+    override fun onBackPressed() {
+        val fragment = supportFragmentManager.findFragmentById(R.id.main_content)
+        if (fragment is EntriesFragment) {
+            if (fragment.onBackPressed()) {
+                return
+            }
+        }
+        super.onBackPressed()
+    }
 }
