@@ -8,8 +8,8 @@
     <data>
 
         <variable
-            name="tagName"
-            type="org.movieos.bluereader.fragment.EntriesFragment.TagName"
+            name="feedRow"
+            type="org.movieos.bluereader.fragment.EntriesFragment.FeedRow"
             />
 
     </data>
@@ -29,12 +29,14 @@
             android:orientation="horizontal"
             >
 
-            <ImageView
+            <ImageButton
+                android:id="@+id/expand"
                 android:layout_width="44dp"
                 android:layout_height="48dp"
                 android:background="?selectableItemBackgroundBorderless"
                 android:scaleType="center"
                 android:src="@drawable/ic_indent_24dp"
+                android:contentDescription="@string/tagging_expand"
                 />
 
             <TextView
@@ -44,10 +46,10 @@
                 android:layout_marginTop="16dp"
                 android:layout_weight="1"
                 android:maxLines="2"
-                android:text="@{tagName.name}"
+                android:text="@{feedRow.name}"
                 android:textAppearance="@style/text_title"
                 android:textColor="?android:textColorPrimary"
-                app:bold="@{tagName.selected}"
+                app:bold="@{feedRow.selected}"
                 tools:text="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
                 />
 
@@ -59,10 +61,10 @@
                 android:maxLines="2"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="12dp"
-                android:text="@{`` + tagName.unread}"
+                android:text="@{`` + feedRow.unread}"
                 android:textAppearance="@style/text_title"
-                android:textColor="?android:textColorPrimary"
-                app:bold="@{tagName.selected}"
+                android:textColor="@{feedRow.unread > 0 ? 0xFF000000 : 0x33000000 }"
+                app:bold="@{feedRow.selected}"
                 tools:text="20"
                 />
 

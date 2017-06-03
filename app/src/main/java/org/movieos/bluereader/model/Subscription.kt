@@ -16,26 +16,21 @@ open class Subscription : RealmObject() {
     @Required
     @SerializedName("created_at")
     var createdAt: Date? = null
-        internal set
 
     @Index
     @SerializedName("feed_id")
     var feedId: Int = 0
-        internal set
 
     @Required
     @SerializedName("title")
     var title: String? = null
-        internal set
 
     @Required
     @SerializedName("feed_url")
     var feedUrl: String? = null
-        internal set
 
     @Required
     @SerializedName("site_url")
     var siteUtl: String? = null
-        internal set
 
 }

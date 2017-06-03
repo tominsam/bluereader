@@ -21,6 +21,7 @@ class BindingAdapter : RecyclerView.Adapter<BindingAdapter.FeedViewHolder>() {
     class Builder {
         val rows : MutableList<Row> = mutableListOf()
 
+        @Suppress("UNCHECKED_CAST")
         fun <B : ViewDataBinding> addRow(klass: Class<B>, id: Int, bind: (B, View) -> Unit) {
             rows += Row(klass as Class<ViewDataBinding>, id, bind as (ViewDataBinding, View) -> Unit)
         }

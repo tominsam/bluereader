@@ -107,7 +107,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
         }
         currentEntry?.removeAllChangeListeners()
         currentEntry = Entry.byId(realm, entryId).findFirstAsync()
-        currentEntry?.addChangeListener { e: Entry -> render() }
+        currentEntry?.addChangeListener { _: Entry -> render() }
     }
 
     internal fun render() {

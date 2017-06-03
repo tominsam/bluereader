@@ -27,4 +27,5 @@
     <string name="login_button_text">Log in</string>
     <string name="tab_view_feeds">Feeds</string>
     <string name="all_entries">All entries</string>
+    <string name="tagging_expand">Show entries</string>
 </resources>

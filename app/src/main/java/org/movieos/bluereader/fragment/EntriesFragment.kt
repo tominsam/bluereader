@@ -17,7 +17,7 @@ import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.R
 import org.movieos.bluereader.databinding.EntriesFragmentBinding
 import org.movieos.bluereader.databinding.EntryRowBinding
-import org.movieos.bluereader.databinding.TaggingRowBinding
+import org.movieos.bluereader.databinding.FeedRowBinding
 import org.movieos.bluereader.model.Entry
 import org.movieos.bluereader.model.Subscription
 import org.movieos.bluereader.model.SyncState
@@ -32,6 +32,7 @@ import java.text.DateFormat
 private val BUNDLE_CURRENT_IDS: String = "bundle_current_ids"
 private val BUNDLE_VIEW_TYPE = "view_type"
 private val BUNDLE_FITER_NAME = "filter_name"
+private val BUNDLE_FITER_FEED = "filter_feed"
 
 class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
@@ -41,8 +42,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     internal val entries: RealmResults<Entry>
     internal val taggings: RealmResults<Tagging>
     internal val currentIds: MutableSet<Int> = mutableSetOf()
-    internal val expandedTaggings: MutableSet<Int> = mutableSetOf()
+    internal val expandedTaggings: MutableSet<String> = mutableSetOf()
     internal var filterName: String? = null
+    internal var filterFeed: Int? = null
 
     init {
         entries = realm.where(Entry::class.java).findAllSortedAsync("published", io.realm.Sort.DESCENDING)
@@ -50,7 +52,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             render()
         }
 
-        taggings = realm.where(Tagging::class.java).findAllSortedAsync("name", io.realm.Sort.DESCENDING)
+        taggings = realm.where(Tagging::class.java).findAllAsync()
         taggings.addChangeListener { _, _ ->
             render()
         }
@@ -256,47 +258,86 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         }
     }
 
-    data class TagName(
+    data class FeedRow(
             val name: String,
             val subscriptions: MutableList<Subscription> = mutableListOf(),
             var unread: Int = 0,
             val selected: Boolean)
 
     private fun buildFeeds(builder: BindingAdapter.Builder) {
-        val taggedSubscriptions: MutableMap<String, TagName> = mutableMapOf()
 
+        // Build fast map of subscription feedId -> unread count
+        val unreadCounts: MutableMap<Int, Int> = mutableMapOf()
+        var totalUnread: Int = 0
+        val allSubscriptions: MutableSet<Subscription> = mutableSetOf()
+
+        entries.forEach {
+            if (it.subscription != null) {
+                allSubscriptions += it.subscription!!
+            }
+            if (it.unread) {
+                unreadCounts[it.feedId] = (unreadCounts[it.feedId] ?: 0) + 1
+                totalUnread += 1
+            }
+        }
+
+        // Group subs into tags
+        val taggedSubscriptions: MutableMap<String, FeedRow> = mutableMapOf()
         for (tagging in taggings) {
             val name = tagging.name ?: continue
             val subscription = tagging.subscription ?: continue
 
             if (taggedSubscriptions[name] == null) {
-                taggedSubscriptions[name] = TagName(name, selected = filterName == name)
+                taggedSubscriptions[name] = FeedRow(name, selected = filterName == name)
             }
             taggedSubscriptions[name]!!.subscriptions += subscription
-            taggedSubscriptions[name]!!.unread += realm.where(Entry::class.java).equalTo("feedId", subscription.feedId).equalTo("unread", true).count().toInt()
+            taggedSubscriptions[name]!!.unread += unreadCounts[subscription.feedId] ?: 0
         }
 
-        val unread = taggedSubscriptions.values.sumBy { it.unread }
+        // Add "all entries" row
+        addFeedrow(builder, -1, FeedRow(getString(R.string.all_entries), unread = totalUnread, selected = filterName == null), unreadCounts, allSubscriptions)
+        // Add a row per tag
+        taggedSubscriptions.values.sortedBy { it.name }.forEachIndexed { index, feedRow ->
+            addFeedrow(builder, index, feedRow, unreadCounts, feedRow.subscriptions)
+        }
 
-        builder.addRow(TaggingRowBinding::class.java, -1) { rowBinding, view ->
-            rowBinding.tagName = TagName(getString(R.string.all_entries), unread = unread, selected = filterName == null)
+    }
+
+    private fun addFeedrow(builder: BindingAdapter.Builder, index: Int, feedRow: FeedRow, unreadCounts: MutableMap<Int, Int>, subscriptions: Collection<Subscription>) {
+        val expanded = feedRow.name in expandedTaggings
+
+        builder.addRow(FeedRowBinding::class.java, index) { rowBinding, view ->
+            rowBinding.feedRow = feedRow
+            rowBinding.expand.visibility = View.VISIBLE
+            rowBinding.expand.rotation = if (expanded) 90f else 0f
             view.setOnClickListener {
-                filterName = null
+                filterName = feedRow.name
+                filterFeed = null
                 binding?.bottomNavigation?.selectedItemId = R.id.menu_unread
             }
+            rowBinding.expand.setOnClickListener {
+                if (expanded) {
+                    expandedTaggings.remove(feedRow.name)
+                } else {
+                    expandedTaggings.add(feedRow.name)
+                }
+                render()
+            }
         }
-
-        val tagNames = taggedSubscriptions.values.sortedBy { it.name }
-        tagNames.forEachIndexed { index, tagName ->
-            builder.addRow(TaggingRowBinding::class.java, index) { rowBinding, view ->
-                rowBinding.tagName = tagName
-                view.setOnClickListener {
-                    filterName = tagName.name
-                    binding?.bottomNavigation?.selectedItemId = R.id.menu_unread
+        if (expanded) {
+            for (subscription in subscriptions.sortedBy { it.title }) {
+                builder.addRow(FeedRowBinding::class.java, index * 100000 + subscription.id) { rowBinding, view ->
+                    rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = false, unread = unreadCounts[subscription.feedId] ?: 0)
+                    rowBinding.expand.visibility = View.INVISIBLE
+                    rowBinding.expand.setOnClickListener(null)
+                    view.setOnClickListener {
+                        filterName = null
+                        filterFeed = subscription.id
+                        binding?.bottomNavigation?.selectedItemId = R.id.menu_unread
+                    }
                 }
             }
         }
-
     }
 
 }
