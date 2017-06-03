@@ -29,8 +29,7 @@ class MainApplication : android.app.Application() {
     }
 
     companion object {
-        var bus = EventBus()
-            internal set
+        val bus = EventBus()
     }
 
 }

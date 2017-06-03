@@ -7,11 +7,11 @@ import io.realm.annotations.PrimaryKey
 import io.realm.annotations.Required
 import java.util.*
 
-open class Subscription : RealmObject(), IntegerPrimaryKey {
+open class Subscription : RealmObject() {
 
     @SerializedName("id")
     @PrimaryKey
-    override var id: Int = 0
+    var id: Int = 0
 
     @Required
     @SerializedName("created_at")

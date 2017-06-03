@@ -157,6 +157,10 @@ class SyncTask private constructor(internal val context: Context, internal val p
     private fun getTaggings(api: Feedbin, realm: Realm) {
         publishProgress("Syncing tags")
         val taggings = api.taggings().execute()
+        for (tagging in taggings.body()) {
+            tagging.subscription = realm.where(Subscription::class.java).equalTo("feedId", tagging.feedId).findFirst()
+        }
+
         realm.executeTransaction { it.copyToRealmOrUpdate(taggings.body()) }
     }
 

@@ -26,4 +26,5 @@
     <string name="login_password_hint">Password</string>
     <string name="login_button_text">Log in</string>
     <string name="tab_view_feeds">Feeds</string>
+    <string name="all_entries">All entries</string>
 </resources>

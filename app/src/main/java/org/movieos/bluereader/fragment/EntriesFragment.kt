@@ -9,7 +9,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import io.realm.Realm
-import io.realm.RealmQuery
 import io.realm.RealmResults
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -18,7 +17,9 @@ import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.R
 import org.movieos.bluereader.databinding.EntriesFragmentBinding
 import org.movieos.bluereader.databinding.EntryRowBinding
+import org.movieos.bluereader.databinding.TaggingRowBinding
 import org.movieos.bluereader.model.Entry
+import org.movieos.bluereader.model.Subscription
 import org.movieos.bluereader.model.SyncState
 import org.movieos.bluereader.model.Tagging
 import org.movieos.bluereader.utilities.BindingAdapter
@@ -28,7 +29,9 @@ import timber.log.Timber
 import java.text.DateFormat
 
 
-val BUNDLE_CURRENT_IDS: String = "bundle_current_ids"
+private val BUNDLE_CURRENT_IDS: String = "bundle_current_ids"
+private val BUNDLE_VIEW_TYPE = "view_type"
+private val BUNDLE_FITER_NAME = "filter_name"
 
 class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
@@ -38,15 +41,17 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     internal val entries: RealmResults<Entry>
     internal val taggings: RealmResults<Tagging>
     internal val currentIds: MutableSet<Int> = mutableSetOf()
+    internal val expandedTaggings: MutableSet<Int> = mutableSetOf()
+    internal var filterName: String? = null
 
     init {
         entries = realm.where(Entry::class.java).findAllSortedAsync("published", io.realm.Sort.DESCENDING)
-        entries.addChangeListener { entries, changeset ->
+        entries.addChangeListener { _, _ ->
             render()
         }
 
         taggings = realm.where(Tagging::class.java).findAllSortedAsync("name", io.realm.Sort.DESCENDING)
-        taggings.addChangeListener { taggings, changeset ->
+        taggings.addChangeListener { _, _ ->
             render()
         }
     }
@@ -55,23 +60,23 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         super.onCreate(savedInstanceState)
         MainApplication.bus.register(this)
         if (savedInstanceState != null) {
-            val viewType = savedInstanceState.getSerializable(VIEW_TYPE) as Entry.ViewType?
+            val viewType = savedInstanceState.getSerializable(BUNDLE_VIEW_TYPE) as Entry.ViewType?
             this.viewType = viewType ?: this.viewType
-            currentIds.addAll(savedInstanceState.getIntegerArrayList(BUNDLE_CURRENT_IDS));
+            currentIds.addAll(savedInstanceState.getIntegerArrayList(BUNDLE_CURRENT_IDS))
+            filterName = savedInstanceState.getString(BUNDLE_FITER_NAME)
         }
-
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putSerializable(VIEW_TYPE, viewType)
+        outState.putSerializable(BUNDLE_VIEW_TYPE, viewType)
         outState.putIntegerArrayList(BUNDLE_CURRENT_IDS, ArrayList(currentIds))
+        outState.putString(BUNDLE_FITER_NAME, filterName)
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): EntriesFragmentBinding {
         val binding = EntriesFragmentBinding.inflate(inflater, container, false)
         binding.recyclerView.adapter = adapter
-        //binding.recyclerView.itemAnimator = null
 
         binding.toolbar.inflateMenu(R.menu.entries_menu)
         binding.toolbar.setOnMenuItemClickListener { item: MenuItem ->
@@ -93,7 +98,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             SyncTask.sync(activity, true, false)
         }
 
-        binding.bottomNavigation.selectedItemId = when(viewType) {
+        binding.bottomNavigation.selectedItemId = when (viewType) {
             Entry.ViewType.UNREAD -> R.id.menu_unread
             Entry.ViewType.STARRED -> R.id.menu_starred
             Entry.ViewType.ALL -> R.id.menu_unread
@@ -187,19 +192,45 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     private fun render() {
         Timber.i("currentIds are $currentIds")
+        binding?.toolbar?.title = filterName ?: getString(R.string.all_entries)
+
         val builder = BindingAdapter.Builder()
+        if (viewType == Entry.ViewType.FEEDS) {
+            buildFeeds(builder)
+        } else {
+            buildEntries(builder)
+        }
+        adapter.fromBuilder(builder)
+
+        if (adapter.itemCount == 0) {
+            binding?.empty?.visibility = View.VISIBLE
+        } else {
+            binding?.empty?.visibility = View.GONE
+        }
+
+    }
+
+    private fun buildEntries(builder: BindingAdapter.Builder) {
         // currentIds is a list of things we're _currently_ showing. We only ever add items
         // to the visible list, except when we change view types, so that we return to a list
         // from the detail view that looks the same even though the dataset got regenerated.
+
+        val filterSubscriptionsList = taggings
+                .filter { it.name == filterName }
+                .map { it.feedId }
+
         val visibleEntries = entries.filter {
-            it.id in currentIds || when (viewType) {
+            val isFiltered = filterSubscriptionsList.isEmpty() || it.feedId in filterSubscriptionsList
+            val isCurrent = it.id in currentIds
+            val isType = when (viewType) {
                 Entry.ViewType.FEEDS -> false
                 Entry.ViewType.ALL -> true
                 Entry.ViewType.UNREAD -> it.unread
                 Entry.ViewType.STARRED -> it.starred
             }
+            isFiltered && (isCurrent || isType)
         }
-        val entryIds = visibleEntries.map {it.id}
+        val entryIds = visibleEntries.map { it.id }
         for (entry in visibleEntries) {
             currentIds += entry.id
             builder.addRow(EntryRowBinding::class.java, entry.id, { binding, view ->
@@ -223,40 +254,49 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 }
             })
         }
-        adapter.fromBuilder(builder)
-
-        if (visibleEntries.isEmpty()) {
-            binding?.empty?.visibility = View.VISIBLE
-        } else {
-            binding?.empty?.visibility = View.GONE
-        }
     }
 
-    fun entries(realm: Realm, viewType: Entry.ViewType, currently: List<Int>?): RealmResults<Entry> {
-        Timber.i("currently is $currently")
-        val entries: RealmQuery<Entry> = when (viewType) {
-            Entry.ViewType.UNREAD ->
-                realm.where(Entry::class.java).equalTo("unread", true)
-            Entry.ViewType.STARRED ->
-                realm.where(Entry::class.java).equalTo("starred", true)
-            Entry.ViewType.ALL ->
-                realm.where(Entry::class.java)
-            Entry.ViewType.FEEDS ->
-                realm.where(Entry::class.java)
-        }
-        if (currently == null) {
-            return entries(realm, viewType, entries.findAll().map{it.id})
+    data class TagName(
+            val name: String,
+            val subscriptions: MutableList<Subscription> = mutableListOf(),
+            var unread: Int = 0,
+            val selected: Boolean)
+
+    private fun buildFeeds(builder: BindingAdapter.Builder) {
+        val taggedSubscriptions: MutableMap<String, TagName> = mutableMapOf()
+
+        for (tagging in taggings) {
+            val name = tagging.name ?: continue
+            val subscription = tagging.subscription ?: continue
+
+            if (taggedSubscriptions[name] == null) {
+                taggedSubscriptions[name] = TagName(name, selected = filterName == name)
+            }
+            taggedSubscriptions[name]!!.subscriptions += subscription
+            taggedSubscriptions[name]!!.unread += realm.where(Entry::class.java).equalTo("feedId", subscription.feedId).equalTo("unread", true).count().toInt()
         }
 
-        currently.forEach {
-            entries.or().equalTo("id", it)
+        val unread = taggedSubscriptions.values.sumBy { it.unread }
+
+        builder.addRow(TaggingRowBinding::class.java, -1) { rowBinding, view ->
+            rowBinding.tagName = TagName(getString(R.string.all_entries), unread = unread, selected = filterName == null)
+            view.setOnClickListener {
+                filterName = null
+                binding?.bottomNavigation?.selectedItemId = R.id.menu_unread
+            }
         }
-        return entries.findAllSortedAsync("published", io.realm.Sort.DESCENDING)
+
+        val tagNames = taggedSubscriptions.values.sortedBy { it.name }
+        tagNames.forEachIndexed { index, tagName ->
+            builder.addRow(TaggingRowBinding::class.java, index) { rowBinding, view ->
+                rowBinding.tagName = tagName
+                view.setOnClickListener {
+                    filterName = tagName.name
+                    binding?.bottomNavigation?.selectedItemId = R.id.menu_unread
+                }
+            }
+        }
+
     }
-
-    companion object {
-        private val VIEW_TYPE = "view_type"
-    }
-
 
 }

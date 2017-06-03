@@ -12,35 +12,29 @@ import io.realm.annotations.Required
 import org.movieos.bluereader.utilities.SyncTask
 import java.util.*
 
-open class Entry : RealmObject(), IntegerPrimaryKey {
+open class Entry : RealmObject() {
     @PrimaryKey
     @SerializedName("id")
-    override var id: Int = 0
+    var id: Int = 0
 
     @Index
     @SerializedName("feed_id")
     var feedId: Int = 0
-        internal set
 
     @SerializedName("title")
     var title: String? = null
-        internal set
 
     @SerializedName("url")
     var url: String? = null
-        internal set
 
     @SerializedName("author")
     var author: String? = null
-        internal set
 
     @SerializedName("content")
     var content: String? = null
-        internal set
 
     @SerializedName("summary")
     var summary: String? = null
-        internal set
 
     val excerpt: String
         get() = summary?.substring(0, Math.min(summary?.length ?: 0, 200)) ?: ""
@@ -48,12 +42,10 @@ open class Entry : RealmObject(), IntegerPrimaryKey {
     @Required
     @SerializedName("created_at")
     var createdAt: Date? = null
-        internal set
 
     @Required
     @SerializedName("published")
     var published: Date? = null
-        internal set
 
     var unread: Boolean = false
 

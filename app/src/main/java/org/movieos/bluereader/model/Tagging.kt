@@ -6,18 +6,18 @@ import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 
-open class Tagging : RealmObject(), IntegerPrimaryKey {
+open class Tagging : RealmObject() {
 
     @PrimaryKey
     @SerializedName("id")
-    override var id: Int = 0
+    var id: Int = 0
 
     @Index
     @SerializedName("feed_id")
     var feedId: Int = 0
-        internal set
 
     @SerializedName("name")
     var name: String? = null
-        internal set
+
+    var subscription: Subscription? = null
 }
