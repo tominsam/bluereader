@@ -104,31 +104,10 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             SyncTask.sync(activity, true, false)
         }
 
-        binding.bottomNavigation.selectedItemId = when (viewType) {
-            Entry.ViewType.UNREAD -> R.id.menu_unread
-            Entry.ViewType.STARRED -> R.id.menu_starred
-            Entry.ViewType.ALL -> R.id.menu_unread
-            Entry.ViewType.FEEDS -> R.id.menu_feeds
-        }
-
-        binding.bottomNavigation.setOnNavigationItemSelectedListener {
-            when (it.itemId) {
-                R.id.menu_unread -> setViewType(Entry.ViewType.UNREAD)
-                R.id.menu_starred -> setViewType(Entry.ViewType.STARRED)
-                R.id.menu_all -> setViewType(Entry.ViewType.ALL)
-                R.id.menu_feeds -> setViewType(Entry.ViewType.FEEDS)
-            }
-            binding.recyclerView.scrollToPosition(0)
-            true // mark as selected
-        }
-
-        binding.bottomNavigation.setOnNavigationItemReselectedListener {
-            currentIds.clear()
-            render()
-            binding.recyclerView.postDelayed({
-                binding.recyclerView.smoothScrollToPosition(0)
-            }, 1)
-        }
+        binding.navigationFeeds.setOnClickListener { setViewType(Entry.ViewType.FEEDS) }
+        binding.navigationAll.setOnClickListener { setViewType(Entry.ViewType.ALL) }
+        binding.navigationUnread.setOnClickListener { setViewType(Entry.ViewType.UNREAD) }
+        binding.navigationStarred.setOnClickListener { setViewType(Entry.ViewType.STARRED) }
 
         if (SyncState.latest(realm) == null) {
             // first run / first sync
@@ -154,7 +133,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     fun onBackPressed(): Boolean {
         if (viewType != Entry.ViewType.FEEDS && binding != null) {
-            binding?.bottomNavigation?.selectedItemId = R.id.menu_feeds
+            setViewType(Entry.ViewType.FEEDS)
             return true
         }
         return false
@@ -198,15 +177,28 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     private fun setViewType(newViewType: Entry.ViewType) {
-        Timber.i("setting new view type $newViewType")
         viewType = newViewType
         currentIds.clear()
         render()
+        if (viewType == newViewType) {
+            Timber.i("resetting existing view type $newViewType")
+            binding?.recyclerView?.postDelayed({
+                binding?.recyclerView?.smoothScrollToPosition(0)
+            }, 1)
+        } else {
+            Timber.i("setting new view type $newViewType")
+            binding?.recyclerView?.scrollToPosition(0)
+        }
     }
 
     private fun render() {
         Timber.i("currentIds are $currentIds")
         binding?.toolbar?.title = filterName ?: getString(R.string.all_entries)
+
+        binding?.navigationUnread?.isSelected = viewType == Entry.ViewType.UNREAD
+        binding?.navigationStarred?.isSelected = viewType == Entry.ViewType.STARRED
+        binding?.navigationAll?.isSelected = viewType == Entry.ViewType.ALL
+        binding?.navigationFeeds?.isSelected = viewType == Entry.ViewType.FEEDS
 
         val builder = BindingAdapter.Builder()
         if (viewType == Entry.ViewType.FEEDS) {
@@ -328,7 +320,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             view.setOnClickListener {
                 filterName = feedRow.name
                 filterFeed = null
-                binding?.bottomNavigation?.selectedItemId = R.id.menu_unread
+                setViewType(Entry.ViewType.UNREAD)
             }
             rowBinding.expand.setOnClickListener {
                 if (expanded) {
@@ -348,7 +340,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                     view.setOnClickListener {
                         filterName = subscription.title
                         filterFeed = subscription.feedId
-                        binding?.bottomNavigation?.selectedItemId = R.id.menu_unread
+                        setViewType(Entry.ViewType.UNREAD)
                     }
                 }
             }

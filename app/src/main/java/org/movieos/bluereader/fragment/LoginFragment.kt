@@ -76,7 +76,7 @@ class LoginFragment : DataBindingFragment<LoginFragmentBinding>() {
             Timber.i("status has resolution")
             status.startResolutionForResult(activity, 990)
         } else {
-            Timber.i("nothing to do")
+            Timber.i("toolbar_button_divider to do")
         }
     }
 

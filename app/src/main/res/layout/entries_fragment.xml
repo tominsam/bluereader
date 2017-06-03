@@ -15,11 +15,11 @@
             style="?toolbarStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            app:subtitleTextAppearance="@style/text_toolbar_subtitle"
+            app:subtitleTextColor="?android:textColorSecondary"
             app:title="@string/app_name"
             app:titleTextAppearance="@style/text_toolbar_title"
-            app:subtitleTextAppearance="@style/text_toolbar_subtitle"
             app:titleTextColor="?android:textColorPrimary"
-            app:subtitleTextColor="?android:textColorSecondary"
             />
 
         <FrameLayout
@@ -60,16 +60,51 @@
             </FrameLayout>
         </FrameLayout>
 
-        <android.support.design.widget.BottomNavigationView
+        <LinearLayout
             android:id="@+id/bottom_navigation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/primary"
+            android:divider="@drawable/toolbar_button_divider"
+            android:gravity="center"
+            android:minHeight="?actionBarSize"
+            android:showDividers="middle"
             android:theme="@style/AppTheme.ActionBarTheme"
-            app:itemIconTint="@color/statelist_toolbar"
-            app:itemTextColor="@color/statelist_toolbar"
-            app:menu="@menu/entries_tabs"
-            />
+            >
+
+            <ImageButton
+                android:id="@+id/navigation_feeds"
+                style="@style/ToolbarButton"
+                android:contentDescription="@string/tab_view_feeds"
+                android:src="@drawable/statelist_feeds"
+                android:tint="@color/statelist_toolbar"
+                />
+
+            <ImageButton
+                android:id="@+id/navigation_starred"
+                style="@style/ToolbarButton"
+                android:contentDescription="@string/tab_view_starred"
+                android:src="@drawable/statelist_starred"
+                android:tint="@color/statelist_toolbar"
+                />
+
+            <ImageButton
+                android:id="@+id/navigation_unread"
+                style="@style/ToolbarButton"
+                android:contentDescription="@string/tab_view_unread"
+                android:src="@drawable/statelist_unread"
+                android:tint="@color/statelist_toolbar"
+                />
+
+            <ImageButton
+                android:id="@+id/navigation_all"
+                style="@style/ToolbarButton"
+                android:contentDescription="@string/tab_view_all"
+                android:src="@drawable/statelist_all"
+                android:tint="@color/statelist_toolbar"
+                />
+
+        </LinearLayout>
 
 
     </LinearLayout>

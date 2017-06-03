@@ -9,4 +9,7 @@
     <color name="star_border">#FF666666</color>
     <color name="background">#FFFFFFFF</color>
     <color name="divider">#09000000</color>
+
+    <color name="toolbar_control_selected">#FFFFFFFF</color>
+    <color name="toolbar_control">#FFEEEEEE</color>
 </resources>
