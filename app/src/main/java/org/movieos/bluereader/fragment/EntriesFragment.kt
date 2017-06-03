@@ -66,6 +66,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             this.viewType = viewType ?: this.viewType
             currentIds.addAll(savedInstanceState.getIntegerArrayList(BUNDLE_CURRENT_IDS))
             filterName = savedInstanceState.getString(BUNDLE_FITER_NAME)
+            filterFeed = savedInstanceState.getInt(BUNDLE_FITER_FEED)
         }
     }
 
@@ -74,6 +75,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         outState.putSerializable(BUNDLE_VIEW_TYPE, viewType)
         outState.putIntegerArrayList(BUNDLE_CURRENT_IDS, ArrayList(currentIds))
         outState.putString(BUNDLE_FITER_NAME, filterName)
+        if (filterFeed != null) {
+            outState.putInt(BUNDLE_FITER_FEED, filterFeed!!)
+        }
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): EntriesFragmentBinding {
@@ -217,9 +221,11 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         // to the visible list, except when we change view types, so that we return to a list
         // from the detail view that looks the same even though the dataset got regenerated.
 
-        val filterSubscriptionsList = taggings
-                .filter { it.name == filterName }
-                .map { it.feedId }
+        val filterSubscriptionsList = if (filterFeed == null) {
+            taggings.filter { it.name == filterName }.map { it.feedId }
+        } else {
+            listOf(filterFeed!!)
+        }
 
         val visibleEntries = entries.filter {
             val isFiltered = filterSubscriptionsList.isEmpty() || it.feedId in filterSubscriptionsList
@@ -232,6 +238,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             }
             isFiltered && (isCurrent || isType)
         }
+
         val entryIds = visibleEntries.map { it.id }
         for (entry in visibleEntries) {
             currentIds += entry.id
@@ -288,14 +295,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             val subscription = tagging.subscription ?: continue
 
             if (taggedSubscriptions[name] == null) {
-                taggedSubscriptions[name] = FeedRow(name, selected = filterName == name)
+                taggedSubscriptions[name] = FeedRow(name, selected = filterName == name && filterFeed == null)
             }
             taggedSubscriptions[name]!!.subscriptions += subscription
             taggedSubscriptions[name]!!.unread += unreadCounts[subscription.feedId] ?: 0
         }
 
         // Add "all entries" row
-        addFeedrow(builder, -1, FeedRow(getString(R.string.all_entries), unread = totalUnread, selected = filterName == null), unreadCounts, allSubscriptions)
+        addFeedrow(builder, -1, FeedRow(getString(R.string.all_entries), unread = totalUnread, selected = filterName == null && filterFeed == null), unreadCounts, allSubscriptions)
         // Add a row per tag
         taggedSubscriptions.values.sortedBy { it.name }.forEachIndexed { index, feedRow ->
             addFeedrow(builder, index, feedRow, unreadCounts, feedRow.subscriptions)
@@ -327,12 +334,12 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         if (expanded) {
             for (subscription in subscriptions.sortedBy { it.title }) {
                 builder.addRow(FeedRowBinding::class.java, index * 100000 + subscription.id) { rowBinding, view ->
-                    rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = false, unread = unreadCounts[subscription.feedId] ?: 0)
+                    rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = filterFeed == subscription.feedId, unread = unreadCounts[subscription.feedId] ?: 0)
                     rowBinding.expand.visibility = View.INVISIBLE
                     rowBinding.expand.setOnClickListener(null)
                     view.setOnClickListener {
-                        filterName = null
-                        filterFeed = subscription.id
+                        filterName = subscription.title
+                        filterFeed = subscription.feedId
                         binding?.bottomNavigation?.selectedItemId = R.id.menu_unread
                     }
                 }
