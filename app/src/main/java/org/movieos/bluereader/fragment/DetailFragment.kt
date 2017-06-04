@@ -74,6 +74,9 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
                 startActivity(chooser)
             }
         }
+        binding.background.setOnClickListener {
+            activity.onBackPressed()
+        }
 
         return binding
     }

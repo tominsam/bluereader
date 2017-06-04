@@ -3,11 +3,29 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     >
 
-    <WebView
-        android:id="@+id/web_view"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scrollbars="vertical"
-        />
+        >
 
+        <View
+            android:id="@+id/fake"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="160dp"
+            android:background="@color/background"
+            />
+
+        <WebView
+            android:id="@+id/web_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:isScrollContainer="true"
+            android:scrollbars="none"
+            />
+
+    </FrameLayout>
 </layout>

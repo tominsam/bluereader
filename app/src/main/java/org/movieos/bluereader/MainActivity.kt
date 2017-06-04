@@ -3,7 +3,6 @@ package org.movieos.bluereader
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.webkit.WebView
 import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
@@ -43,7 +42,6 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
     override fun onStart() {
         super.onStart()
         realm = Realm.getDefaultInstance()
-        WebView(this).loadData("test", null, null)
         SyncTask.sync(this, false, false)
     }
 

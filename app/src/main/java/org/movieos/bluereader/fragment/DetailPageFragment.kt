@@ -13,11 +13,8 @@ import android.view.ContextMenu
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
+import android.webkit.*
 import android.webkit.WebView.HitTestResult
-import android.webkit.WebViewClient
 import io.realm.Realm
 import org.movieos.bluereader.R
 import org.movieos.bluereader.databinding.DetailPageFragmentBinding
@@ -25,13 +22,10 @@ import org.movieos.bluereader.model.Entry
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.text.DateFormat
+import java.util.*
 
 
 class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
-
-    internal val entry: Entry by lazy {
-        Realm.getDefaultInstance().use { Entry.byId(it, arguments.getInt(ENTRY_ID)).findFirst() }
-    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): DetailPageFragmentBinding {
@@ -41,6 +35,7 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         binding.webView.isSaveEnabled = false
         // Needed for youtube embeds to work
         binding.webView.settings.javaScriptEnabled = true
+        binding.webView.setBackgroundColor(0x00000000)
         binding.webView.setWebChromeClient(object : WebChromeClient() {})
         binding.webView.setWebViewClient(object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -53,22 +48,42 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
             }
         })
 
+        binding.webView.addJavascriptInterface(this, "android")
+
         registerForContextMenu(binding.webView)
 
+        val entry = Realm.getDefaultInstance().use { Entry.byId(it, arguments.getInt(ENTRY_ID)).findFirst() }
         binding.webView.loadDataWithBaseURL(entry.url, template
-                .replace("{{body}}", entry.content ?: "")
+                .replace("{{body}}", safeContent(entry.content) ?: "")
                 .replace("{{title}}", Html.escapeHtml(entry.title ?: ""))
                 .replace("{{link}}", Html.escapeHtml(entry.url ?: ""))
                 .replace("{{author}}", Html.escapeHtml(entry.displayAuthor))
-                .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry.published)))
+                .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry.published ?: Date())))
                 , "text/html", "utf-8", "")
 
         return binding
     }
 
+    @Suppress("unused")
+    @JavascriptInterface
+    fun back() {
+        activity.runOnUiThread {
+            activity.onBackPressed()
+        }
+    }
+
+    private fun safeContent(content: String?): String? {
+        // Stupid hack to stop people breaking my CSS override
+        return content?.replace(Regex("rel=[\"']stylesheet['\"]"), "")
+    }
+
     override fun onDestroyView() {
+        // Trying really hard to release the webviews
+        binding?.webView?.setWebChromeClient(null)
+        binding?.webView?.setWebViewClient(null)
+        binding?.webView?.removeJavascriptInterface("android")
+        binding?.webView?.destroy()
         super.onDestroyView()
-        entry.removeAllChangeListeners()
     }
 
     override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
@@ -89,7 +104,7 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
             val chooser = Intent.createChooser(shareIntent, result.extra)
             startActivity(chooser)
 
-        } else if (result.type == HitTestResult.ANCHOR_TYPE || result.type == HitTestResult.SRC_ANCHOR_TYPE) {
+        } else if (result.type == HitTestResult.SRC_ANCHOR_TYPE) {
             // Menu options for a hyperlink.
 
             // Send the link to something

@@ -12,82 +12,98 @@
             />
     </data>
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         >
 
-        <android.support.v4.view.ViewPager
-            android:id="@+id/view_pager"
+        <!-- weird view layout so I can try to fade the bg in and slide the viewpager in -->
+        <View
+            android:id="@+id/background"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:background="#66000000"
             />
 
         <LinearLayout
-            style="?toolbarStyle"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
             >
 
-            <ImageButton
-                android:id="@+id/toolbar_back"
-                style="@style/ToolbarButton"
-                android:contentDescription="@string/action_back"
-                android:src="@drawable/ic_arrow_back_24dp"
-                android:tint="?colorControlNormal"
-                app:selected="@{entry.starred}"
-                />
-
-            <Space
-                android:layout_width="0dp"
+            <android.support.v4.view.ViewPager
+                android:id="@+id/view_pager"
+                android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
+                android:transitionGroup="true"
                 />
 
-            <ImageButton
-                android:id="@+id/toolbar_share"
-                style="@style/ToolbarButton"
-                android:layout_marginEnd="4dp"
-                android:contentDescription="@string/action_share"
-                android:src="@drawable/ic_share_24dp"
-                android:tint="?colorControlNormal"
-                />
+            <LinearLayout
+                android:id="@+id/bottom_toolbar"
+                style="?toolbarStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                >
 
-            <ImageButton
-                android:id="@+id/toolbar_open"
-                style="@style/ToolbarButton"
-                android:layout_marginEnd="4dp"
-                android:contentDescription="@string/action_open"
-                android:src="@drawable/ic_open_in_browser_24dp"
-                android:tint="?colorControlNormal"
-                />
+                <ImageButton
+                    android:id="@+id/toolbar_back"
+                    style="@style/ToolbarButton"
+                    android:contentDescription="@string/action_back"
+                    android:src="@drawable/ic_close_black_24dp"
+                    android:tint="?colorControlNormal"
+                    app:selected="@{entry.starred}"
+                    />
 
-            <ImageButton
-                android:id="@+id/toolbar_starred"
-                style="@style/ToolbarButton"
-                android:layout_marginEnd="4dp"
-                android:contentDescription="@string/is_starred"
-                android:src="@drawable/statelist_starred"
-                android:tint="?colorControlNormal"
-                app:selected="@{entry.starred}"
-                />
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    />
 
-            <ImageButton
-                android:id="@+id/toolbar_unread"
-                style="@style/ToolbarButton"
-                android:layout_marginEnd="4dp"
-                android:contentDescription="@string/is_unread"
-                android:src="@drawable/statelist_unread"
-                android:tint="?colorControlNormal"
-                app:selected="@{entry.unread}"
-                />
+                <ImageButton
+                    android:id="@+id/toolbar_share"
+                    style="@style/ToolbarButton"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="@string/action_share"
+                    android:src="@drawable/ic_share_24dp"
+                    android:tint="?colorControlNormal"
+                    />
+
+                <ImageButton
+                    android:id="@+id/toolbar_open"
+                    style="@style/ToolbarButton"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="@string/action_open"
+                    android:src="@drawable/ic_open_in_browser_24dp"
+                    android:tint="?colorControlNormal"
+                    />
+
+                <ImageButton
+                    android:id="@+id/toolbar_starred"
+                    style="@style/ToolbarButton"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="@string/is_starred"
+                    android:src="@drawable/statelist_starred"
+                    android:tint="?colorControlNormal"
+                    app:selected="@{entry.starred}"
+                    />
+
+                <ImageButton
+                    android:id="@+id/toolbar_unread"
+                    style="@style/ToolbarButton"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="@string/is_unread"
+                    android:src="@drawable/statelist_unread"
+                    android:tint="?colorControlNormal"
+                    app:selected="@{entry.unread}"
+                    />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-
-    </LinearLayout>
+    </FrameLayout>
 </layout>

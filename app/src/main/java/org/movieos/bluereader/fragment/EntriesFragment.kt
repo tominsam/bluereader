@@ -3,7 +3,7 @@ package org.movieos.bluereader.fragment
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
-import android.support.v4.app.FragmentTransaction.TRANSIT_FRAGMENT_CLOSE
+import android.transition.TransitionInflater
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -248,10 +248,11 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                     Entry.setUnread(context, realm, entry, false)
                     val fragment = DetailFragment.create(entryIds, entry.id)
                     fragment.setTargetFragment(this@EntriesFragment, 0)
+                    fragment.enterTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)
+                    fragment.returnTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)
                     fragmentManager
                             .beginTransaction()
-                            .setTransition(TRANSIT_FRAGMENT_CLOSE)
-                            .replace(R.id.main_content, fragment)
+                            .add(R.id.main_content, fragment)
                             .addToBackStack(null)
                             .commit()
                 }

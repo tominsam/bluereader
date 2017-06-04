@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transitionSet xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <fade android:duration="200">
+        <targets>
+            <target android:targetId="@id/background"/>
+        </targets>
+    </fade>
+
+    <slide
+        android:duration="300"
+        android:slideEdge="bottom"
+        >
+        <targets>
+            <target android:targetId="@id/view_pager"/>
+        </targets>
+    </slide>
+
+</transitionSet>

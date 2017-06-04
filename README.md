@@ -4,8 +4,6 @@ I'm writing an RSS reader for some stupid reason.
 
 ## Short-term TODO
 
-* Batter toolbar icons
-* Replace bottom nav with something less awful
 * Probably restore the top nav on entries because I don't like where the back button is
 * Feed management - add/remove/tag feeds
 

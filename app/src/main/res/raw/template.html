@@ -8,47 +8,73 @@
         html, body {
             max-width: 100%;
             overflow-x: hidden;
-        }
-
-        p, pre, blockquote, h1, h2, h3, h4, h5, h6 {
-            border: 0;
-            vertical-align: middle;
-            max-width: 100%;
-            height: auto;
-            margin: 12px 8px 0px 8px;
+            margin: 0;
             padding: 0;
         }
 
-        img, iframe, p, pre, blockquote, table, h1, h2, h3, h4, h5, h6, div {
+        div#topPadding {
+            height: 148px; /* must match view id fake  - 12px*/
+        }
+
+        div#content {
+            background-color: white;
+            padding: 24px 12px 40px 12px;
+            margin: 0 8px 0 8px;
+            min-height: 70vh;
+        }
+
+        h4#author {
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        a:link, a:visited, a:hover, a:active {
+            color: #1976D2;
+            font-weight: bold;
+        }
+
+        img, iframe, p, pre, table, h1, h2, h3, h4, h5, h6, div {
             border: 0;
             vertical-align: middle;
             max-width: 100%;
             height: auto;
-            margin: 12px 8px 0px 8px;
+            margin: 0px 0px 12px 0px;
             padding: 0;
         }
 
         blockquote {
-            padding-left: 12px;
-            margin-left: 12px;
+            border: 0;
+            vertical-align: middle;
+            max-width: 100%;
+            height: auto;
+            margin: 0px 0px 12px 12px;
+            padding: 0 0 0 12px;
             border-left: 2px solid #CCCCCC;
         }
 
-        h2 {
+        h1 {
+            font-size: 22px;
         }
-
-        h4 {
-            margin-bottom: 16px;
+        h2 {
+            font-size: 18px;
+        }
+        h3 {
+            font-size: 16px;
+        }
+        h3 {
+            font-size: 14px;
         }
 
     </style>
     <title>{{title}}</title>
 </head>
-<body>
-    <h2><a href="{{link}}">{{title}}</a></h2>
-    <h4>{{author}}</h4>
-
+<div>
+    <div id="topPadding" onClick="android.back()"></div>
+    <div id="content">
+    <h1 id="title"><a href="{{link}}">{{title}}</a></h1>
+    <h4 id="author">{{author}}</h4>
     {{body}}
+    </div>
 </body>
 </html>
 
