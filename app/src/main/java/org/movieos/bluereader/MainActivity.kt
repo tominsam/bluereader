@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
     // control the lifetime of the realm object
     internal var realm: Realm? = null
 
-    val client by lazy {
+    val client: GoogleApiClient by lazy {
         GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)
                 .addApi(Auth.CREDENTIALS_API)

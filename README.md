@@ -4,8 +4,10 @@ I'm writing an RSS reader for some stupid reason.
 
 ## Short-term TODO
 
-* Probably restore the top nav on entries because I don't like where the back button is
+* Logigng out should clear state
+* app shotcuts should work
 * Feed management - add/remove/tag feeds
+
 
 ## Longer-term TODO
 

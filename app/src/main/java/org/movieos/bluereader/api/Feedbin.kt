@@ -29,6 +29,7 @@ import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
+@Suppress("LoopToCallChain")
 class Feedbin(context: Context) {
 
     private var api: RawApi

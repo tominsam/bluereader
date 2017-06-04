@@ -14,7 +14,7 @@ class BindingAdapter : RecyclerView.Adapter<BindingAdapter.FeedViewHolder>() {
 
     class FeedViewHolder(val binding: ViewDataBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
-            itemView.setTag(binding)
+            itemView.tag = binding
         }
     }
 
@@ -32,11 +32,8 @@ class BindingAdapter : RecyclerView.Adapter<BindingAdapter.FeedViewHolder>() {
     private var rows: List<Row> = ArrayList()
         set(value) {
             field = value
-            for (row in value) {
-                if (!bindingClasses.contains(row.bindingClass)) {
-                    bindingClasses += row.bindingClass
-                }
-            }
+            value.filterNot { bindingClasses.contains(it.bindingClass) }
+                    .forEach { bindingClasses += it.bindingClass }
             notifyDataSetChanged()
         }
 

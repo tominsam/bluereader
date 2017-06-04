@@ -76,65 +76,49 @@ class SyncTask private constructor(internal val context: Context, internal val p
         // make list solid here so that later changes are predictable
         val localStates = ArrayList(LocalState.all(realm))
 
-        realm.executeTransaction {
-            for (localState in localStates) {
-                val id = localState.entryId
-                val markStarred = localState.markStarred
-                if (markStarred != null) {
-                    addStarred.remove(id)
-                    removeStarred.remove(id)
-                    if (markStarred) {
-                        addStarred.add(id)
-                    } else {
-                        removeStarred.add(id)
-                    }
+        // We'll roll through the list of local state changes and build
+        // authoritative lists of "last touch" state - if you star something
+        // and unstar it in the same loop, we'll only record the last change
+        // you made.
+        for (localState in localStates) {
+            val id = localState.entryId
+            val markStarred = localState.markStarred
+            if (markStarred != null) {
+                addStarred.remove(id)
+                removeStarred.remove(id)
+                if (markStarred) {
+                    addStarred.add(id)
+                } else {
+                    removeStarred.add(id)
                 }
-                val markUnread = localState.markUnread
-                if (markUnread != null) {
-                    addUnread.remove(id)
-                    removeUnread.remove(id)
-                    if (markUnread) {
-                        addUnread.add(id)
-                    } else {
-                        removeUnread.add(id)
-                    }
+            }
+            val markUnread = localState.markUnread
+            if (markUnread != null) {
+                addUnread.remove(id)
+                removeUnread.remove(id)
+                if (markUnread) {
+                    addUnread.add(id)
+                } else {
+                    removeUnread.add(id)
                 }
             }
         }
 
+        // Push state to the server
         if (!addStarred.isEmpty()) {
             api.addStarred(addStarred).execute()
-            realm.executeTransaction { r ->
-                for (entry in r.where(Entry::class.java).`in`("id", addStarred.toTypedArray()).findAll()) {
-                    entry.starred = true
-                }
-            }
         }
         if (!removeStarred.isEmpty()) {
             api.removeStarred(removeStarred).execute()
-            realm.executeTransaction { r ->
-                for (entry in r.where(Entry::class.java).`in`("id", removeStarred.toTypedArray()).findAll()) {
-                    entry.starred = false
-                }
-            }
         }
         if (!addUnread.isEmpty()) {
             api.addUnread(addUnread).execute()
-            realm.executeTransaction { r ->
-                for (entry in r.where(Entry::class.java).`in`("id", addUnread.toTypedArray()).findAll()) {
-                    entry.unread = true
-                }
-            }
         }
         if (!removeUnread.isEmpty()) {
             api.removeUnread(removeUnread).execute()
-            realm.executeTransaction { r ->
-                for (entry in r.where(Entry::class.java).`in`("id", removeUnread.toTypedArray()).findAll()) {
-                    entry.unread = false
-                }
-            }
         }
 
+        // and delete the local state objects that we've handled
         if (!localStates.isEmpty()) {
             realm.executeTransaction {
                 for (localState in localStates) {
@@ -146,15 +130,15 @@ class SyncTask private constructor(internal val context: Context, internal val p
 
     @Throws(IOException::class)
     private fun getSubscriptions(api: Feedbin, realm: Realm) {
+        // TODO remove subscriptions
         publishProgress("Syncing subscriptions")
-//        val latestSubscription = realm.where(Subscription::class.java).findAllSorted("createdAt", Sort.DESCENDING).first(null)
-//        val subscriptionsSince = latestSubscription?.createdAt
         val subscriptions = api.subscriptions(null).execute()
         realm.executeTransaction { it.copyToRealmOrUpdate(subscriptions.body()) }
     }
 
     @Throws(IOException::class)
     private fun getTaggings(api: Feedbin, realm: Realm) {
+        // TODO remove tags
         publishProgress("Syncing tags")
         val taggings = api.taggings().execute()
         for (tagging in taggings.body()) {
@@ -172,7 +156,6 @@ class SyncTask private constructor(internal val context: Context, internal val p
         publishProgress("Syncing starred state")
         val starred = api.starred().execute().body()
 
-        var entryCount = 0
         publishProgress("Syncing entries")
         val latestEntry = realm.where(Entry::class.java).findAllSorted("createdAt", Sort.DESCENDING).first(null)
         var entriesSince: Date? = latestEntry?.createdAt
@@ -180,29 +163,30 @@ class SyncTask private constructor(internal val context: Context, internal val p
             // ignore the incremental sync stuff until we have at least one successful sync
             entriesSince = null
         }
+
         var entries = api.entries(entriesSince).execute()
+        var entryCount = 0
         while (true) {
-            val finalResponse = entries
-            insertEntries(realm, unread, starred, finalResponse)
+            insertEntries(realm, unread, starred, entries)
+
+            // Is there another page?
             val links = PageLinks(entries.raw())
-            if (links.next == null) {
-                break
-            }
+            if (links.next == null) break
+
+            // Post progress count so the user feels ok about this
             entryCount += entries.body().size
-            publishProgress(String.format(Locale.getDefault(), "Syncing entries (%d)", entryCount))
-            if (links.next == null) {
-                break
-            }
-            entries = api.entriesPaginate(links.next!!).execute()
             if (entryCount >= MAX_ENTRIES_COUNT) {
-                // TODO handle better
+                // Ok, we've fetched enough. Probably.
                 break
             }
+            publishProgress(String.format(Locale.getDefault(), "Syncing entries (%d)", entryCount))
+
+            // Fetch next page and loop again
+            entries = api.entriesPaginate(links.next!!).execute()
         }
 
-        // Now we need to re-up everything in the database, because there's no way of knowing
-        // if the server changed the starred / unread state of something - we won't have seen
-        // it in the API response if it's not new.
+        // Now we need to update everything in the database - the server doesn't return entries
+        // new in the sync list just because their unread state changed.
         realm.executeTransaction { r ->
             for (entry in r.where(Entry::class.java).findAll()) {
                 entry.unread = unread.contains(entry.id)
@@ -211,18 +195,14 @@ class SyncTask private constructor(internal val context: Context, internal val p
         }
 
         // Finally, if there's anything in the unread or starred lists we haven't seen,
-        // fetch those explicitly.
-        var missing: List<Int> = ArrayList()
-        for (integer in unread) {
-            if (Entry.byId(realm, integer).findFirst() == null) {
-                missing += integer
-            }
-        }
-        for (integer in starred) {
-            if (Entry.byId(realm, integer).findFirst() == null) {
-                missing += integer
-            }
-        }
+        // fetch those explicitly (eg, unread or starred entries more than MAX_ENTRIES_COUNT
+        // into the past - we want those lists to be complete no matter how far back we need
+        // to go
+        var missing: List<Int> = listOf()
+        missing += unread.filter { Entry.byId(realm, it).findFirst() == null }
+        missing += starred.filter { Entry.byId(realm, it).findFirst() == null }
+        missing = missing.distinct()
+
         while (!missing.isEmpty()) {
             publishProgress("Backfilling " + missing.size + " entries")
             val page = missing.sliceSafely(0, CATCHUP_SIZE)
@@ -233,15 +213,16 @@ class SyncTask private constructor(internal val context: Context, internal val p
 
     }
 
-    private fun insertEntries(realm: Realm, unread: List<Int>, starred: List<Int>, finalResponse: Response<List<Entry>>) {
-        for (entry in finalResponse.body()) {
+    private fun insertEntries(realm: Realm, unread: List<Int>, starred: List<Int>, response: Response<List<Entry>>) {
+        for (entry in response.body()) {
             // Connect entries to their subscriptions
             entry.subscription = realm.where(Subscription::class.java).equalTo("feedId", entry.feedId).findFirst()
-            // Create entries with the right read/unread state
+            // Set the right read/unread state
             entry.starred = starred.contains(entry.id)
             entry.unread = unread.contains(entry.id)
         }
-        realm.executeTransaction { it.copyToRealmOrUpdate(finalResponse.body()) }
+        // Insert all entries at once
+        realm.executeTransaction { it.copyToRealmOrUpdate(response.body()) }
     }
 
     class SyncStatus {
@@ -269,8 +250,8 @@ class SyncTask private constructor(internal val context: Context, internal val p
 
         val SYNC_EXECUTOR: Executor = Executors.newSingleThreadExecutor()
 
-        private val CATCHUP_SIZE = 10
-        private val MAX_ENTRIES_COUNT = 1000
+        private val CATCHUP_SIZE = 20
+        private val MAX_ENTRIES_COUNT = 5000
 
         fun sync(context: Context, force: Boolean, pushOnly: Boolean) {
             if (Settings.getCredentials(context) == null) {
