@@ -45,7 +45,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     internal val currentIds: MutableSet<Int> = mutableSetOf()
     internal val expandedTaggings: MutableSet<String> = mutableSetOf()
     internal var filterName: String? = null
-    internal var filterFeed: Int? = null
+    internal var filterFeed: Collection<Int> = emptyList()
 
     init {
         entries = realm.where(Entry::class.java).findAllSortedAsync("published", io.realm.Sort.DESCENDING)
@@ -67,7 +67,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             this.viewType = viewType ?: this.viewType
             currentIds.addAll(savedInstanceState.getIntegerArrayList(BUNDLE_CURRENT_IDS))
             filterName = savedInstanceState.getString(BUNDLE_FITER_NAME)
-            filterFeed = savedInstanceState.getInt(BUNDLE_FITER_FEED)
+            filterFeed = savedInstanceState.getIntegerArrayList(BUNDLE_FITER_FEED) ?: emptyList()
         }
     }
 
@@ -76,14 +76,13 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         outState.putSerializable(BUNDLE_VIEW_TYPE, viewType)
         outState.putIntegerArrayList(BUNDLE_CURRENT_IDS, ArrayList(currentIds))
         outState.putString(BUNDLE_FITER_NAME, filterName)
-        if (filterFeed != null) {
-            outState.putInt(BUNDLE_FITER_FEED, filterFeed!!)
-        }
+        outState.putIntegerArrayList(BUNDLE_FITER_FEED, ArrayList(filterFeed))
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): EntriesFragmentBinding {
         val binding = EntriesFragmentBinding.inflate(inflater, container, false)
         binding.recyclerView.adapter = adapter
+        binding.recyclerView.itemAnimator = null
 
         binding.toolbar.inflateMenu(R.menu.entries_menu)
         binding.toolbar.setOnMenuItemClickListener { item: MenuItem ->
@@ -228,14 +227,8 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         // to the visible list, except when we change view types, so that we return to a list
         // from the detail view that looks the same even though the dataset got regenerated.
 
-        val filterSubscriptionsList = if (filterFeed == null) {
-            taggings.filter { it.name == filterName }.map { it.feedId }
-        } else {
-            listOf(filterFeed!!)
-        }
-
         val visibleEntries = entries.filter {
-            val isFiltered = filterSubscriptionsList.isEmpty() || it.feedId in filterSubscriptionsList
+            val isFiltered = filterFeed.isEmpty() || it.feedId in filterFeed
             val isCurrent = it.id in currentIds
             val isType = when (viewType) {
                 Entry.ViewType.FEEDS -> false
@@ -274,7 +267,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     data class FeedRow(
-            val name: String,
+            val name: String?,
             val subscriptions: MutableList<Subscription> = mutableListOf(),
             var unread: Int = 0,
             val selected: Boolean)
@@ -303,14 +296,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             val subscription = tagging.subscription ?: continue
 
             if (taggedSubscriptions[name] == null) {
-                taggedSubscriptions[name] = FeedRow(name, selected = filterName == name && filterFeed == null)
+                taggedSubscriptions[name] = FeedRow(name, selected = filterName == name)
             }
             taggedSubscriptions[name]!!.subscriptions += subscription
             taggedSubscriptions[name]!!.unread += unreadCounts[subscription.feedId] ?: 0
         }
 
         // Add "all entries" row
-        addFeedrow(builder, -1, FeedRow(getString(R.string.all_entries), unread = totalUnread, selected = filterName == null && filterFeed == null), unreadCounts, allSubscriptions)
+        addFeedrow(builder, -1, FeedRow(null, unread = totalUnread, selected = filterName == null), unreadCounts, allSubscriptions)
         // Add a row per tag
         taggedSubscriptions.values.sortedBy { it.name }.forEachIndexed { index, feedRow ->
             addFeedrow(builder, index, feedRow, unreadCounts, feedRow.subscriptions)
@@ -319,7 +312,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     private fun addFeedrow(builder: BindingAdapter.Builder, index: Int, feedRow: FeedRow, unreadCounts: MutableMap<Int, Int>, subscriptions: Collection<Subscription>) {
-        val expanded = feedRow.name in expandedTaggings
+        val expanded = (feedRow.name ?: "") in expandedTaggings
 
         builder.addRow(FeedRowBinding::class.java, index) { rowBinding, view ->
             rowBinding.feedRow = feedRow
@@ -327,14 +320,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             rowBinding.expand.rotation = if (expanded) 90f else 0f
             view.setOnClickListener {
                 filterName = feedRow.name
-                filterFeed = null
+                filterFeed = subscriptions.map { it.feedId }
                 setViewType(Entry.ViewType.UNREAD)
             }
             rowBinding.expand.setOnClickListener {
                 if (expanded) {
-                    expandedTaggings.remove(feedRow.name)
+                    expandedTaggings.remove(feedRow.name ?: "")
                 } else {
-                    expandedTaggings.add(feedRow.name)
+                    expandedTaggings.add(feedRow.name ?: "")
                 }
                 render()
             }
@@ -342,12 +335,12 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         if (expanded) {
             for (subscription in subscriptions.sortedBy { it.title }) {
                 builder.addRow(FeedRowBinding::class.java, index * 100000 + subscription.id) { rowBinding, view ->
-                    rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = filterFeed == subscription.feedId, unread = unreadCounts[subscription.feedId] ?: 0)
+                    rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = filterFeed == listOf(subscription.feedId), unread = unreadCounts[subscription.feedId] ?: 0)
                     rowBinding.expand.visibility = View.INVISIBLE
                     rowBinding.expand.setOnClickListener(null)
                     view.setOnClickListener {
                         filterName = subscription.title
-                        filterFeed = subscription.feedId
+                        filterFeed = listOf(subscription.feedId)
                         setViewType(Entry.ViewType.UNREAD)
                     }
                 }

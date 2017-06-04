@@ -47,7 +47,7 @@
                 android:layout_marginTop="16dp"
                 android:layout_weight="1"
                 android:maxLines="2"
-                android:text="@{feedRow.name}"
+                android:text="@{feedRow.name ?? @string/all_entries}"
                 android:textAppearance="@style/text_title"
                 android:textColor="?android:textColorPrimary"
                 app:bold="@{feedRow.selected}"
