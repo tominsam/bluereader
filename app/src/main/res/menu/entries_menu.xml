@@ -9,6 +9,11 @@
         android:icon="@drawable/ic_refresh_24dp"
         />
     <item
+        android:id="@+id/menu_theme"
+        android:title="@string/menu_theme"
+        app:showAsAction="never"
+        />
+    <item
         android:id="@+id/menu_logout"
         android:title="@string/menu_log_out"
         app:showAsAction="never"

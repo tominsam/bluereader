@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.LabeledIntent
 import android.net.Uri
 import android.os.Bundle
-import android.support.customtabs.CustomTabsIntent
 import android.support.v4.content.ContextCompat
 import android.text.Html
 import android.view.ContextMenu
@@ -19,6 +18,7 @@ import io.realm.Realm
 import org.movieos.bluereader.R
 import org.movieos.bluereader.databinding.DetailPageFragmentBinding
 import org.movieos.bluereader.model.Entry
+import org.movieos.bluereader.utilities.Web
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.text.DateFormat
@@ -39,11 +39,7 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         binding.webView.setWebChromeClient(object : WebChromeClient() {})
         binding.webView.setWebViewClient(object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                val builder = CustomTabsIntent.Builder()
-                builder.setToolbarColor(ContextCompat.getColor(activity, R.color.primary))
-                builder.addDefaultShareMenuItem()
-                val customTabsIntent = builder.build()
-                customTabsIntent.launchUrl(activity, request.url)
+                Web.openInBrowser(activity, request.url.toString())
                 return true
             }
         })
@@ -58,6 +54,9 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
                 .replace("{{title}}", Html.escapeHtml(entry.title ?: ""))
                 .replace("{{link}}", Html.escapeHtml(entry.url ?: ""))
                 .replace("{{author}}", Html.escapeHtml(entry.displayAuthor))
+                .replace("{{background}}", String.format("%08X", ContextCompat.getColor(activity, R.color.background)).substring(2, 8))
+                .replace("{{textPrimary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_primary)).substring(2, 8))
+                .replace("{{textSecondary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_secondary)).substring(2, 8))
                 .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry.published ?: Date())))
                 , "text/html", "utf-8", "")
 

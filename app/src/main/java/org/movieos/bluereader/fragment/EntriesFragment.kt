@@ -1,6 +1,7 @@
 package org.movieos.bluereader.fragment
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.transition.TransitionInflater
@@ -90,6 +91,12 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 R.id.menu_refresh -> {
                     item.isEnabled = false
                     SyncTask.sync(activity, true, false)
+                }
+                R.id.menu_theme -> {
+                    activity.getSharedPreferences("settings", Context.MODE_PRIVATE).edit()
+                            .putBoolean("night_mode", !(activity as MainActivity).wantNightMode())
+                            .apply()
+                    activity.recreate()
                 }
                 R.id.menu_logout -> {
                     Settings.saveCredentials(activity, null)

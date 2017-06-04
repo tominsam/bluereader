@@ -5,10 +5,16 @@
     <color name="primary_light">#BBDEFB</color>
     <color name="accent">#607D8B</color>
 
+    <color name="toolbar_background">@color/primary</color>
+    <color name="modal_mask">#66000000</color>
+
     <color name="star_filled">#FFFFDF00</color>
     <color name="star_border">#FF666666</color>
     <color name="background">#FFFFFFFF</color>
-    <color name="divider">#09000000</color>
+    <color name="divider">#FFEEEEEE</color>
+    <color name="text_primary">#FF000000</color>
+    <color name="text_secondary">#FF666666</color>
+    <color name="text_disabled">#FFDDDDDD</color>
 
     <color name="toolbar_control_selected">#FFFFFFFF</color>
     <color name="toolbar_control">#FFEEEEEE</color>

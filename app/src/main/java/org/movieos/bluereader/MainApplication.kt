@@ -1,5 +1,6 @@
 package org.movieos.bluereader
 
+import android.support.v7.app.AppCompatDelegate
 import android.webkit.WebView
 import io.realm.Realm
 import io.realm.RealmConfiguration
@@ -9,6 +10,7 @@ import timber.log.Timber
 class MainApplication : android.app.Application() {
 
     override fun onCreate() {
+        WebView(this) // https://issuetracker.google.com/issues/37124582
         super.onCreate()
 
         if (BuildConfig.DEBUG) {

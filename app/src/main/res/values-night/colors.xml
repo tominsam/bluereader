@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="toolbar_background">#FF222222</color>
+    <color name="star_border">#FF666666</color>
+    <color name="background">#FF111111</color>
+    <color name="text_primary">#FFDDDDDD</color>
+    <color name="text_secondary">#FF999999</color>
+    <color name="text_disabled">#FF222222</color>
+    <color name="divider">#FF222222</color>
+    <color name="modal_mask">#CC000000</color>
+    <color name="toolbar_control_selected">#FFDDDDDD</color>
+    <color name="toolbar_control">#FFCCCCCC</color>
+</resources>

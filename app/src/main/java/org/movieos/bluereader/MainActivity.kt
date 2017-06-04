@@ -1,8 +1,10 @@
 package org.movieos.bluereader
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.app.AppCompatDelegate
 import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
@@ -27,6 +29,12 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        AppCompatDelegate.setDefaultNightMode(
+                when (wantNightMode()) {
+                    true -> AppCompatDelegate.MODE_NIGHT_YES
+                    false -> AppCompatDelegate.MODE_NIGHT_NO
+                }
+        )
         setTheme(R.style.AppTheme)
 
         super.onCreate(savedInstanceState)
@@ -38,6 +46,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
                     .commit()
         }
     }
+
+    fun wantNightMode() = getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("night_mode", false)
 
     override fun onStart() {
         super.onStart()
