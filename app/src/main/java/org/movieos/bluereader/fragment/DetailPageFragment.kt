@@ -48,18 +48,22 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
         registerForContextMenu(binding.webView)
 
-        val entry = Realm.getDefaultInstance().use { Entry.byId(it, arguments.getInt(ENTRY_ID)).findFirst() }
-        binding.webView.loadDataWithBaseURL(entry.url, template
-                .replace("{{body}}", safeContent(entry.content) ?: "")
-                .replace("{{title}}", Html.escapeHtml(entry.title ?: ""))
-                .replace("{{link}}", Html.escapeHtml(entry.url ?: ""))
-                .replace("{{author}}", Html.escapeHtml(entry.displayAuthor))
-                .replace("{{background}}", String.format("%08X", ContextCompat.getColor(activity, R.color.background)).substring(2, 8))
-                .replace("{{textPrimary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_primary)).substring(2, 8))
-                .replace("{{textSecondary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_secondary)).substring(2, 8))
-                .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry.published ?: Date())))
-                , "text/html", "utf-8", "")
-
+        val entry: Entry? = Realm.getDefaultInstance().use { Entry.byId(it, arguments.getInt(ENTRY_ID)).findFirst() }
+        if (entry == null) {
+            binding.webView.visibility = View.GONE
+            binding.fake.visibility = View.GONE
+        } else {
+            binding.webView.loadDataWithBaseURL(entry.url, template
+                    .replace("{{body}}", safeContent(entry.content) ?: "")
+                    .replace("{{title}}", Html.escapeHtml(entry.title ?: ""))
+                    .replace("{{link}}", Html.escapeHtml(entry.url ?: ""))
+                    .replace("{{author}}", Html.escapeHtml(entry.displayAuthor))
+                    .replace("{{background}}", String.format("%08X", ContextCompat.getColor(activity, R.color.background)).substring(2, 8))
+                    .replace("{{textPrimary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_primary)).substring(2, 8))
+                    .replace("{{textSecondary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_secondary)).substring(2, 8))
+                    .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry.published ?: Date())))
+                    , "text/html", "utf-8", "")
+        }
         return binding
     }
 

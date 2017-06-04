@@ -246,7 +246,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 binding.entry = entry
                 view.setOnClickListener {
                     Entry.setUnread(context, realm, entry, false)
-                    val fragment = DetailFragment.create(entryIds, entry.id)
+                    val fragment = DetailFragment.create(listOf(-1) + entryIds + listOf(-1), entry.id)
                     fragment.setTargetFragment(this@EntriesFragment, 0)
                     fragment.enterTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)
                     fragment.returnTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)

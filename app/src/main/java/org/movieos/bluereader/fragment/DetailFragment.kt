@@ -109,8 +109,12 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
             (targetFragment as EntriesFragment).childDisplayedEntryId(entryId)
         }
         currentEntry?.removeAllChangeListeners()
-        currentEntry = Entry.byId(realm, entryId).findFirstAsync()
-        currentEntry?.addChangeListener { _: Entry -> render() }
+        if (entryId == -1) {
+            activity.onBackPressed()
+        } else {
+            currentEntry = Entry.byId(realm, entryId).findFirstAsync()
+            currentEntry?.addChangeListener { _: Entry -> render() }
+        }
     }
 
     internal fun render() {
