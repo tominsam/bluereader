@@ -139,7 +139,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     fun onBackPressed(): Boolean {
-        if (viewType != Entry.ViewType.FEEDS && binding != null) {
+        if (viewType != Entry.ViewType.FEEDS && !filterFeed.isEmpty()) {
             setViewType(Entry.ViewType.FEEDS)
             return true
         }
