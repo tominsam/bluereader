@@ -28,6 +28,7 @@ import org.movieos.bluereader.utilities.Settings
 import org.movieos.bluereader.utilities.SyncTask
 import timber.log.Timber
 import java.text.DateFormat
+import kotlin.system.measureTimeMillis
 
 
 private val BUNDLE_CURRENT_IDS: String = "bundle_current_ids"
@@ -198,7 +199,6 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     private fun render() {
-        Timber.i("currentIds are $currentIds")
         binding?.toolbar?.title = filterName ?: getString(R.string.all_entries)
 
         binding?.navigationUnread?.isSelected = viewType == Entry.ViewType.UNREAD
@@ -208,12 +208,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
         val builder = BindingAdapter.Builder()
         if (viewType == Entry.ViewType.FEEDS) {
-            buildFeeds(builder)
+            val feeds = measureTimeMillis { buildFeeds(builder) }
+            Timber.i("Took $feeds ms to build feeds")
         } else {
-            buildEntries(builder)
+            val entries = measureTimeMillis { buildEntries(builder) }
+            Timber.i("Took $entries ms to build entries")
         }
         adapter.fromBuilder(builder)
-
+6
         if (adapter.itemCount == 0) {
             binding?.empty?.visibility = View.VISIBLE
         } else {
@@ -227,16 +229,22 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         // to the visible list, except when we change view types, so that we return to a list
         // from the detail view that looks the same even though the dataset got regenerated.
 
-        val visibleEntries = entries.filter {
-            val isFiltered = filterFeed.isEmpty() || it.feedId in filterFeed
-            val isCurrent = it.id in currentIds
+        val visibleEntries = mutableListOf<Entry>()
+        for (entry in entries) {
+            val isFiltered = filterFeed.isEmpty() || entry.feedId in filterFeed
+            val isCurrent = entry.id in currentIds
             val isType = when (viewType) {
                 Entry.ViewType.FEEDS -> false
                 Entry.ViewType.ALL -> true
-                Entry.ViewType.UNREAD -> it.unread
-                Entry.ViewType.STARRED -> it.starred
+                Entry.ViewType.UNREAD -> entry.unread
+                Entry.ViewType.STARRED -> entry.starred
             }
-            isFiltered && (isCurrent || isType)
+            if (isFiltered && (isCurrent || isType)) {
+                visibleEntries += entry
+            }
+            if (visibleEntries.size >= 1000) {
+                break
+            }
         }
 
         val entryIds = visibleEntries.map { it.id }
@@ -269,25 +277,15 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     data class FeedRow(
             val name: String?,
             val subscriptions: MutableList<Subscription> = mutableListOf(),
-            var unread: Int = 0,
-            val selected: Boolean)
+            val selected: Boolean) {
+        val unread: Int
+        get() = subscriptions.sumBy { it.unreadCount }
+    }
 
     private fun buildFeeds(builder: BindingAdapter.Builder) {
 
-        // Build fast map of subscription feedId -> unread count
-        val unreadCounts: MutableMap<Int, Int> = mutableMapOf()
-        var totalUnread: Int = 0
-        val allSubscriptions: MutableSet<Subscription> = mutableSetOf()
-
-        entries.forEach {
-            if (it.subscription != null) {
-                allSubscriptions += it.subscription!!
-            }
-            if (it.unread) {
-                unreadCounts[it.feedId] = (unreadCounts[it.feedId] ?: 0) + 1
-                totalUnread += 1
-            }
-        }
+        val allSubscriptions = realm.where(Subscription::class.java).findAll()
+        val totalUnread = allSubscriptions.sumBy { it.unreadCount }
 
         // Group subs into tags
         val taggedSubscriptions: MutableMap<String, FeedRow> = mutableMapOf()
@@ -299,19 +297,18 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 taggedSubscriptions[name] = FeedRow(name, selected = filterName == name)
             }
             taggedSubscriptions[name]!!.subscriptions += subscription
-            taggedSubscriptions[name]!!.unread += unreadCounts[subscription.feedId] ?: 0
         }
 
         // Add "all entries" row
-        addFeedrow(builder, -1, FeedRow(null, unread = totalUnread, selected = filterName == null), unreadCounts, allSubscriptions)
+        addFeedrow(builder, -1, FeedRow(null, selected = filterName == null), allSubscriptions)
         // Add a row per tag
         taggedSubscriptions.values.sortedBy { it.name }.forEachIndexed { index, feedRow ->
-            addFeedrow(builder, index, feedRow, unreadCounts, feedRow.subscriptions)
+            addFeedrow(builder, index, feedRow, feedRow.subscriptions)
         }
 
     }
 
-    private fun addFeedrow(builder: BindingAdapter.Builder, index: Int, feedRow: FeedRow, unreadCounts: MutableMap<Int, Int>, subscriptions: Collection<Subscription>) {
+    private fun addFeedrow(builder: BindingAdapter.Builder, index: Int, feedRow: FeedRow, subscriptions: Collection<Subscription>) {
         val expanded = (feedRow.name ?: "") in expandedTaggings
 
         builder.addRow(FeedRowBinding::class.java, index) { rowBinding, view ->
@@ -335,7 +332,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         if (expanded) {
             for (subscription in subscriptions.sortedBy { it.title }) {
                 builder.addRow(FeedRowBinding::class.java, index * 100000 + subscription.id) { rowBinding, view ->
-                    rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = filterFeed == listOf(subscription.feedId), unread = unreadCounts[subscription.feedId] ?: 0)
+                    rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = filterFeed == listOf(subscription.feedId))
                     rowBinding.expand.visibility = View.INVISIBLE
                     rowBinding.expand.setOnClickListener(null)
                     view.setOnClickListener {

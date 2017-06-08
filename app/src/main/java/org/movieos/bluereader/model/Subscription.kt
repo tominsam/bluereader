@@ -33,4 +33,5 @@ open class Subscription : RealmObject() {
     @SerializedName("site_url")
     var siteUtl: String? = null
 
+    var unreadCount: Int = 0
 }

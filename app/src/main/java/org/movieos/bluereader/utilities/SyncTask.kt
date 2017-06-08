@@ -187,10 +187,19 @@ class SyncTask private constructor(internal val context: Context, internal val p
 
         // Now we need to update everything in the database - the server doesn't return entries
         // new in the sync list just because their unread state changed.
+        //
+        // We'll also count global unread entries at this point
         realm.executeTransaction { r ->
+            val unreadCounts = mutableMapOf<Int, Int>()
             for (entry in r.where(Entry::class.java).findAll()) {
                 entry.unread = unread.contains(entry.id)
                 entry.starred = starred.contains(entry.id)
+                if (entry.unread) {
+                    unreadCounts[entry.feedId] = (unreadCounts[entry.feedId] ?: 0) + 1
+                }
+            }
+            for (subscription in r.where(Subscription::class.java).findAll()) {
+                subscription.unreadCount = unreadCounts[subscription.feedId] ?: 0
             }
         }
 
@@ -251,7 +260,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
         val SYNC_EXECUTOR: Executor = Executors.newSingleThreadExecutor()
 
         private val CATCHUP_SIZE = 20
-        private val MAX_ENTRIES_COUNT = 5000
+        private val MAX_ENTRIES_COUNT = 10_000
 
         fun sync(context: Context, force: Boolean, pushOnly: Boolean) {
             if (Settings.getCredentials(context) == null) {
