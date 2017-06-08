@@ -95,7 +95,9 @@ open class Entry : RealmObject() {
             val id = entry.id
             realm.executeTransactionAsync { r ->
                 r.copyToRealm(LocalState(id, unread, null))
-                byId(r, id).findFirst()?.unread = unread
+                val localEntry = byId(r, id).findFirst()
+                localEntry?.unread = unread
+                localEntry?.subscription?.unreadCount = r.where(Entry::class.java).equalTo("feedId", localEntry.feedId).equalTo("unread", true).count().toInt()
             }
             // wait longer when reading things (as it's a passive action)
             Handler().postDelayed({ SyncTask.sync(context, false, true) }, if (unread) 5_000L else 20_000L)

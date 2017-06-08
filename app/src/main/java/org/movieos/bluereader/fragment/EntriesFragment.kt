@@ -216,7 +216,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             Timber.i("Took $entries ms to build entries")
         }
         adapter.fromBuilder(builder)
-6
+
         if (adapter.itemCount == 0) {
             binding?.empty?.visibility = View.VISIBLE
         } else {
@@ -284,9 +284,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     private fun buildFeeds(builder: BindingAdapter.Builder) {
-
         val allSubscriptions = realm.where(Subscription::class.java).findAll()
-        val totalUnread = allSubscriptions.sumBy { it.unreadCount }
 
         // Group subs into tags
         val taggedSubscriptions: MutableMap<String, FeedRow> = mutableMapOf()
@@ -301,15 +299,15 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         }
 
         // Add "all entries" row
-        addFeedrow(builder, -1, FeedRow(null, selected = filterName == null), allSubscriptions)
+        addFeedrow(builder, -1, FeedRow(null, selected = filterName == null, subscriptions = allSubscriptions))
         // Add a row per tag
         taggedSubscriptions.values.sortedBy { it.name }.forEachIndexed { index, feedRow ->
-            addFeedrow(builder, index, feedRow, feedRow.subscriptions)
+            addFeedrow(builder, index, feedRow)
         }
 
     }
 
-    private fun addFeedrow(builder: BindingAdapter.Builder, index: Int, feedRow: FeedRow, subscriptions: Collection<Subscription>) {
+    private fun addFeedrow(builder: BindingAdapter.Builder, index: Int, feedRow: FeedRow) {
         val expanded = (feedRow.name ?: "") in expandedTaggings
 
         builder.addRow(FeedRowBinding::class.java, index) { rowBinding, view ->
@@ -318,7 +316,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             rowBinding.expand.rotation = if (expanded) 90f else 0f
             view.setOnClickListener {
                 filterName = feedRow.name
-                filterFeed = subscriptions.map { it.feedId }
+                filterFeed = if (feedRow.name == null) emptyList() else feedRow.subscriptions.map { it.feedId }
                 setViewType(Entry.ViewType.UNREAD)
             }
             rowBinding.expand.setOnClickListener {
@@ -331,7 +329,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             }
         }
         if (expanded) {
-            for (subscription in subscriptions.sortedBy { it.title }) {
+            for (subscription in feedRow.subscriptions.sortedBy { it.title }) {
                 builder.addRow(FeedRowBinding::class.java, index * 100000 + subscription.id) { rowBinding, view ->
                     rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = filterFeed == listOf(subscription.feedId))
                     rowBinding.expand.visibility = View.INVISIBLE
