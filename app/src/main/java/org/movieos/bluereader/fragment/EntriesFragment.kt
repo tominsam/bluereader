@@ -100,6 +100,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 }
                 R.id.menu_logout -> {
                     Settings.saveCredentials(activity, null)
+                    realm.executeTransaction { it.deleteAll() }
                     startActivity(Intent(activity, MainActivity::class.java))
                 }
             }

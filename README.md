@@ -4,7 +4,6 @@ I'm writing an RSS reader for some stupid reason.
 
 ## Short-term TODO
 
-* Logigng out should clear state
 * app shotcuts should work
 * Feed management - add/remove/tag feeds
 * update subscription cached unread counts on read/unread
