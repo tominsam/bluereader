@@ -99,10 +99,12 @@ class LoginFragment : DataBindingFragment<LoginFragmentBinding>() {
     private fun saveSmartLock(email: String, password: String) {
         // blind save
         val activity = activity as MainActivity
-        val credential = Credential.Builder(email).setPassword(password).build()
-        Auth.CredentialsApi.save(activity.client, credential).setResultCallback { result ->
-            if (result.status.hasResolution()) {
-                result.status.startResolutionForResult(activity, 0)
+        if (activity.client.isConnected) {
+            val credential = Credential.Builder(email).setPassword(password).build()
+            Auth.CredentialsApi.save(activity.client, credential).setResultCallback { result ->
+                if (result.status.hasResolution()) {
+                    result.status.startResolutionForResult(activity, 0)
+                }
             }
         }
     }
