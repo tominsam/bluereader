@@ -13,12 +13,14 @@ import org.movieos.bluereader.model.Subscription
 import org.movieos.bluereader.model.SyncState
 import retrofit2.Response
 import timber.log.Timber
-import java.io.IOException
 import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-class SyncTask private constructor(internal val context: Context, internal val pushOnly: Boolean) : AsyncTask<Void, String, SyncTask.SyncStatus>() {
+class SyncTask private constructor(
+        val context: Context,
+        val pushOnly: Boolean
+) : AsyncTask<Void, String, SyncTask.SyncStatus>() {
 
     private fun start() {
         executeOnExecutor(SYNC_EXECUTOR)
@@ -65,7 +67,6 @@ class SyncTask private constructor(internal val context: Context, internal val p
         MainApplication.bus.post(syncStatus)
     }
 
-    @Throws(IOException::class)
     private fun pushState(api: Feedbin, realm: Realm) {
         publishProgress("Pushing local state")
         val addStarred = HashSet<Int>()
@@ -128,7 +129,6 @@ class SyncTask private constructor(internal val context: Context, internal val p
         }
     }
 
-    @Throws(IOException::class)
     private fun getSubscriptions(api: Feedbin, realm: Realm) {
         // TODO remove subscriptions
         publishProgress("Syncing subscriptions")
@@ -136,7 +136,6 @@ class SyncTask private constructor(internal val context: Context, internal val p
         realm.executeTransaction { it.copyToRealmOrUpdate(subscriptions.body()) }
     }
 
-    @Throws(IOException::class)
     private fun getTaggings(api: Feedbin, realm: Realm) {
         // TODO remove tags
         publishProgress("Syncing tags")
@@ -148,7 +147,6 @@ class SyncTask private constructor(internal val context: Context, internal val p
         realm.executeTransaction { it.copyToRealmOrUpdate(taggings.body()) }
     }
 
-    @Throws(IOException::class)
     private fun getEntries(api: Feedbin, realm: Realm) {
         // We need these first so we can add new entries in the right state
         publishProgress("Syncing unread state")
@@ -159,7 +157,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
         publishProgress("Syncing entries")
         val latestEntry = realm.where(Entry::class.java).findAllSorted("createdAt", Sort.DESCENDING).first(null)
         var entriesSince: Date? = latestEntry?.createdAt
-        if (SyncState.latest(realm) == null) {
+        if (SyncState.latest(realm).findFirst() == null) {
             // ignore the incremental sync stuff until we have at least one successful sync
             entriesSince = null
         }
@@ -267,7 +265,7 @@ class SyncTask private constructor(internal val context: Context, internal val p
                 return
             }
             val realm = Realm.getDefaultInstance()
-            val state = SyncState.latest(realm)
+            val state = SyncState.latest(realm).findFirst()
             if (state == null || state.isStale || force || pushOnly) {
                 Timber.i("Syncing")
                 SyncTask(context.applicationContext, pushOnly).start()

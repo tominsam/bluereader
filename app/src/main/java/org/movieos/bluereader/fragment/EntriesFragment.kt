@@ -38,15 +38,16 @@ private val BUNDLE_FITER_FEED = "filter_feed"
 
 class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
-    internal val adapter = BindingAdapter()
-    private val realm = Realm.getDefaultInstance()
-    internal var viewType = Entry.ViewType.UNREAD
-    internal val entries: RealmResults<Entry>
-    internal val taggings: RealmResults<Tagging>
-    internal val currentIds: MutableSet<Int> = mutableSetOf()
-    internal val expandedTaggings: MutableSet<String> = mutableSetOf()
-    internal var filterName: String? = null
-    internal var filterFeed: Collection<Int> = emptyList()
+    val adapter = BindingAdapter()
+    val realm = Realm.getDefaultInstance()
+    val syncState: RealmResults<SyncState> = SyncState.latest(realm).findAllAsync()
+    var viewType = Entry.ViewType.UNREAD
+    val entries: RealmResults<Entry>
+    val taggings: RealmResults<Tagging>
+    val currentIds: MutableSet<Int> = mutableSetOf()
+    val expandedTaggings: MutableSet<String> = mutableSetOf()
+    var filterName: String? = null
+    var filterFeed: Collection<Int> = emptyList()
 
     init {
         entries = realm.where(Entry::class.java).findAllSortedAsync("published", io.realm.Sort.DESCENDING)
@@ -70,6 +71,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             filterName = savedInstanceState.getString(BUNDLE_FITER_NAME)
             filterFeed = savedInstanceState.getIntegerArrayList(BUNDLE_FITER_FEED) ?: emptyList()
         }
+        syncState.addChangeListener { state: RealmResults<SyncState> -> displaySyncTime(state.first()) }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -79,6 +81,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         outState.putString(BUNDLE_FITER_NAME, filterName)
         outState.putIntegerArrayList(BUNDLE_FITER_FEED, ArrayList(filterFeed))
     }
+
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): EntriesFragmentBinding {
         val binding = EntriesFragmentBinding.inflate(inflater, container, false)
@@ -112,12 +115,12 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             SyncTask.sync(activity, true, false)
         }
 
-        binding.navigationFeeds.setOnClickListener { setViewType(Entry.ViewType.FEEDS) }
-        binding.navigationAll.setOnClickListener { setViewType(Entry.ViewType.ALL) }
-        binding.navigationUnread.setOnClickListener { setViewType(Entry.ViewType.UNREAD) }
-        binding.navigationStarred.setOnClickListener { setViewType(Entry.ViewType.STARRED) }
+        binding.navigationFeeds.setOnClickListener { changeViewType(Entry.ViewType.FEEDS) }
+        binding.navigationAll.setOnClickListener { changeViewType(Entry.ViewType.ALL) }
+        binding.navigationUnread.setOnClickListener { changeViewType(Entry.ViewType.UNREAD) }
+        binding.navigationStarred.setOnClickListener { changeViewType(Entry.ViewType.STARRED) }
 
-        if (SyncState.latest(realm) == null) {
+        if (SyncState.latest(realm).findFirst() == null) {
             // first run / first sync
             SyncTask.sync(activity, true, false)
         }
@@ -127,7 +130,6 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     override fun onResume() {
         super.onResume()
-        displaySyncTime()
         render()
     }
 
@@ -135,13 +137,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         super.onDestroy()
         entries.removeAllChangeListeners()
         taggings.removeAllChangeListeners()
+        syncState.removeAllChangeListeners()
         realm.close()
         MainApplication.bus.unregister(this)
     }
 
     fun onBackPressed(): Boolean {
         if (viewType != Entry.ViewType.FEEDS && !filterFeed.isEmpty()) {
-            setViewType(Entry.ViewType.FEEDS)
+            changeViewType(Entry.ViewType.FEEDS)
             return true
         }
         return false
@@ -155,7 +158,6 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 currentIds.clear()
             }
             binding?.swipeRefreshLayout?.isRefreshing = false
-            displaySyncTime()
             render()
             binding?.toolbar?.menu?.findItem(R.id.menu_refresh)?.isEnabled = true
         } else {
@@ -169,8 +171,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         }
     }
 
-    private fun displaySyncTime() {
-        val state = SyncState.latest(realm)
+    private fun displaySyncTime(state: SyncState?) {
         val format = DateFormat.getDateTimeInstance()
         binding?.toolbar?.subtitle = "Last synced " + if (state == null) "never" else format.format(state.timeStamp)
     }
@@ -184,7 +185,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         }
     }
 
-    private fun setViewType(newViewType: Entry.ViewType) {
+    private fun changeViewType(newViewType: Entry.ViewType) {
         viewType = newViewType
         currentIds.clear()
         render()
@@ -317,7 +318,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             view.setOnClickListener {
                 filterName = feedRow.name
                 filterFeed = if (feedRow.name == null) emptyList() else feedRow.subscriptions.map { it.feedId }
-                setViewType(Entry.ViewType.UNREAD)
+                changeViewType(Entry.ViewType.UNREAD)
             }
             rowBinding.expand.setOnClickListener {
                 if (expanded) {
@@ -337,7 +338,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                     view.setOnClickListener {
                         filterName = subscription.title
                         filterFeed = listOf(subscription.feedId)
-                        setViewType(Entry.ViewType.UNREAD)
+                        changeViewType(Entry.ViewType.UNREAD)
                     }
                 }
             }
