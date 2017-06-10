@@ -1,6 +1,5 @@
 package org.movieos.bluereader
 
-import android.support.v7.app.AppCompatDelegate
 import android.webkit.WebView
 import io.realm.Realm
 import io.realm.RealmConfiguration
@@ -10,6 +9,7 @@ import timber.log.Timber
 class MainApplication : android.app.Application() {
 
     override fun onCreate() {
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         WebView(this) // https://issuetracker.google.com/issues/37124582
         super.onCreate()
 
@@ -18,16 +18,10 @@ class MainApplication : android.app.Application() {
         }
 
         Realm.init(this)
-
-        val config = RealmConfiguration.Builder()
+        Realm.setDefaultConfiguration(RealmConfiguration.Builder()
                 .schemaVersion(6)
                 .deleteRealmIfMigrationNeeded()
-                .build()
-
-        Realm.setDefaultConfiguration(config)
-
-        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
-
+                .build())
     }
 
     companion object {

@@ -2,6 +2,7 @@ package org.movieos.bluereader.model
 
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.RealmQuery
 import io.realm.annotations.PrimaryKey
 import java.util.*
 
@@ -24,8 +25,8 @@ open class SyncState : RealmObject {
 
     companion object {
 
-        fun latest(realm: Realm): SyncState? {
-            return realm.where(SyncState::class.java).equalTo("id", 1).findFirst()
+        fun latest(realm: Realm): RealmQuery<SyncState> {
+            return realm.where(SyncState::class.java).equalTo("id", 1)
         }
     }
 

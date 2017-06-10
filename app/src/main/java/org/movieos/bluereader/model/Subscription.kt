@@ -7,6 +7,7 @@ import io.realm.annotations.PrimaryKey
 import io.realm.annotations.Required
 import java.util.*
 
+@Suppress("unused")
 open class Subscription : RealmObject() {
 
     @SerializedName("id")

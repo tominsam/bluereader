@@ -30,11 +30,6 @@ open class LocalState : RealmObject {
     }
 
     companion object {
-
-        fun forEntry(realm: Realm, entry: Entry): RealmResults<LocalState> {
-            return realm.where(LocalState::class.java).equalTo("entryId", entry.id).findAllSorted("timeStamp")
-        }
-
         fun all(realm: Realm): RealmResults<LocalState> {
             return realm.where(LocalState::class.java).findAllSorted("timeStamp")
         }

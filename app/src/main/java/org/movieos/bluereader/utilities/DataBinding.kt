@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package org.movieos.bluereader.utilities
 
 import android.databinding.BindingAdapter

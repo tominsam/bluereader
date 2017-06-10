@@ -36,13 +36,13 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         // Needed for youtube embeds to work
         binding.webView.settings.javaScriptEnabled = true
         binding.webView.setBackgroundColor(0x00000000)
-        binding.webView.setWebChromeClient(object : WebChromeClient() {})
-        binding.webView.setWebViewClient(object : WebViewClient() {
+        binding.webView.webChromeClient = object : WebChromeClient() {}
+        binding.webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 Web.openInBrowser(activity, request.url.toString())
                 return true
             }
-        })
+        }
 
         binding.webView.addJavascriptInterface(this, "android")
 
@@ -82,8 +82,8 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
     override fun onDestroyView() {
         // Trying really hard to release the webviews
-        binding?.webView?.setWebChromeClient(null)
-        binding?.webView?.setWebViewClient(null)
+        binding?.webView?.webChromeClient = null
+        binding?.webView?.webViewClient = null
         binding?.webView?.removeJavascriptInterface("android")
         binding?.webView?.destroy()
         super.onDestroyView()
