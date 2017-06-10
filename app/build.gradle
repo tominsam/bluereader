@@ -4,7 +4,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'realm-android'
 
 buildscript {
-    ext.support_version = '26.0.0-beta1'
+    ext.support_version = '26.0.0-beta2'
 }
 
 android {
