@@ -24,6 +24,7 @@ import java.io.InputStreamReader
 import java.text.DateFormat
 import java.util.*
 
+private const val ENTRY_ID = "entry_id"
 
 class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
@@ -147,9 +148,6 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
     }
 
     companion object {
-
-        private val ENTRY_ID = "entry_id"
-
         fun create(entryId: Int): DetailPageFragment {
             val fragment = DetailPageFragment()
             fragment.arguments = Bundle()

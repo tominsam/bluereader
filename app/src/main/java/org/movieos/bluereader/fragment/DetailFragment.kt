@@ -13,8 +13,8 @@ import org.movieos.bluereader.model.Entry
 import org.movieos.bluereader.utilities.Web
 import timber.log.Timber
 
-private val INITIAL_ENTRY = "current_entry"
-private val ENTRY_IDS = "entry_ids"
+private const val INITIAL_ENTRY = "current_entry"
+private const val ENTRY_IDS = "entry_ids"
 
 class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
 

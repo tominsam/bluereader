@@ -26,33 +26,53 @@ import org.movieos.bluereader.utilities.*
 import timber.log.Timber
 import java.text.DateFormat
 
-
-private val BUNDLE_CURRENT_IDS: String = "bundle_current_ids"
-private val BUNDLE_VIEW_TYPE = "view_type"
-private val BUNDLE_FITER_NAME = "filter_name"
-private val BUNDLE_FITER_FEED = "filter_feed"
+private const val BUNDLE_CURRENT_IDS: String = "bundle_current_ids"
+private const val BUNDLE_VIEW_TYPE = "view_type"
+private const val BUNDLE_FITER_NAME = "filter_name"
+private const val BUNDLE_FITER_FEED = "filter_feed"
+private const val BUNDLE_EXPANDED_TAGGINGS = "expanded_taggings"
 
 class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
-    val realm = Realm.getDefaultInstance()
-    val entryWatcher = realm.where(Entry::class.java).findAllAsync()
+    // Transient fragment state
+
+    // The realm object
+    val realm: Realm = Realm.getDefaultInstance()
+    // Watches for any changes to any and all entry objects
+    val entryWatcher: RealmResults<Entry> = realm.where(Entry::class.java).findAllAsync()
+    // Watches for changes to app sync state
     val syncState: RealmResults<SyncState> = SyncState.latest(realm).findAllAsync()
-    var viewType = Entry.ViewType.UNREAD
-    val currentIds: MutableSet<Int> = mutableSetOf()
-    val expandedTaggings: MutableSet<String> = mutableSetOf()
-    var filterName: String? = null
-    var filterFeed: Collection<Int> = emptyList()
+    // Adapter that shows entries efficiently. Keep this on the fragment so that
+    // we can switch view types without scrolling to the top because we created
+    // a new adapter
     val entriesAdapter: EntriesAdapter
+    // Adapter for displaying feeds/tags efficiently.
     val feedsAdapter = BindingAdapter()
 
+    // Persisted view states:
+
+    // A list of entry IDs we're looking at, so we don't ever remove things
+    val currentIds: MutableSet<Int> = mutableSetOf()
+    // Display name for the current feed filter
+    var filterName: String? = null
+    // List of feed IDs we're filtering to, empty for "show all"
+    var filterFeed: Collection<Int> = emptyList()
+    // current selected view type
+    var viewType = Entry.ViewType.UNREAD
+    // Track which feed tags are expanded
+    var expandedTaggings: MutableSet<String> = mutableSetOf()
+
     init {
+        // Every time any entries change, rebuld the displayed list. Not very efficient.
         entryWatcher.addChangeListener { _: RealmResults<Entry> ->
             Timber.i("realm changed")
             render()
         }
 
+        // This adapter accepts a realm resultlist and efficiently renders rows
         entriesAdapter = EntriesAdapter({ entry ->
             Entry.setUnread(context, realm, entry, false)
+            // TODO
 //            val allIds = measureTimeMillis("allIds") {
 //                entries.map { it.id }
 //            }
@@ -80,6 +100,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             currentIds.addAll(savedInstanceState.getIntegerArrayList(BUNDLE_CURRENT_IDS))
             filterName = savedInstanceState.getString(BUNDLE_FITER_NAME)
             filterFeed = savedInstanceState.getIntegerArrayList(BUNDLE_FITER_FEED) ?: emptyList()
+            expandedTaggings = savedInstanceState.getStringArrayList(BUNDLE_EXPANDED_TAGGINGS).toHashSet()
         }
         syncState.addChangeListener { state: RealmResults<SyncState> -> displaySyncTime(state.first()) }
 
@@ -91,6 +112,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         outState.putIntegerArrayList(BUNDLE_CURRENT_IDS, ArrayList(currentIds))
         outState.putString(BUNDLE_FITER_NAME, filterName)
         outState.putIntegerArrayList(BUNDLE_FITER_FEED, ArrayList(filterFeed))
+        outState.putStringArrayList(BUNDLE_EXPANDED_TAGGINGS, ArrayList(expandedTaggings))
     }
 
 
