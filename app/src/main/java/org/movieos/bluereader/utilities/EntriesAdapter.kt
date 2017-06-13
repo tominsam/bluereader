@@ -8,8 +8,8 @@ import org.movieos.bluereader.databinding.EntryRowBinding
 import org.movieos.bluereader.model.Entry
 
 class EntriesAdapter(
-        val tapListener: (Entry) -> Unit,
-        val starListener: (Entry, Boolean) -> Boolean
+        val tapListener: (entry: Entry, index: Int) -> Unit,
+        val starListener: (entry: Entry, newValue: Boolean) -> Boolean
 ) : RecyclerView.Adapter<BindingAdapter.FeedViewHolder>() {
 
     var entries: RealmResults<Entry>? = null
@@ -41,7 +41,7 @@ class EntriesAdapter(
         val entry = entries!![position]
         binding.entry = entry
         binding.executePendingBindings()
-        holder.itemView.setOnClickListener { tapListener.invoke(entry) }
+        holder.itemView.setOnClickListener { tapListener.invoke(entry, holder.adapterPosition) }
         binding.star.setOnClickListener { binding.star.isSelected = starListener.invoke(entry, !it.isSelected) }
     }
 }

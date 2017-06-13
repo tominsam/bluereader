@@ -70,13 +70,8 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         }
 
         // This adapter accepts a realm resultlist and efficiently renders rows
-        entriesAdapter = EntriesAdapter({ entry ->
-            Entry.setUnread(context, realm, entry, false)
-            // TODO
-//            val allIds = measureTimeMillis("allIds") {
-//                entries.map { it.id }
-//            }
-            val fragment = DetailFragment.create(listOf(-1) + listOf(entry.id) + listOf(-1), entry.id)
+        entriesAdapter = EntriesAdapter({ _, index ->
+            val fragment = DetailFragment.create(index)
             fragment.setTargetFragment(this, 0)
             fragment.enterTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)
             fragment.returnTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)

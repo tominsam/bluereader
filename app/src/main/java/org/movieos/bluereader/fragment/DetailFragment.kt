@@ -8,27 +8,45 @@ import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import io.realm.Realm
+import io.realm.RealmResults
 import org.movieos.bluereader.databinding.DetailFragmentBinding
 import org.movieos.bluereader.model.Entry
 import org.movieos.bluereader.utilities.Web
 import timber.log.Timber
 
-private const val INITIAL_ENTRY = "current_entry"
-private const val ENTRY_IDS = "entry_ids"
+private const val INITIAL_INDEX = "initial_index"
 
 class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
 
     val realm: Realm = Realm.getDefaultInstance()
-    var entryIds: List<Int> = listOf()
-    var currentEntry: Entry? = null
+    // Watches for any changes to any and all entry objects
+    val entryWatcher: RealmResults<Entry> = realm.where(Entry::class.java).findAllAsync()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        entryIds = arguments.getIntegerArrayList(ENTRY_IDS) ?: ArrayList()
+    val entriesFragment: EntriesFragment
+        get() = targetFragment as EntriesFragment
+
+    init {
+        // Every time any entries change, rebuld the displayed list. Not very efficient.
+        entryWatcher.addChangeListener { _: RealmResults<Entry> ->
+            Timber.i("realm changed")
+            updateToolbar()
+            binding?.viewPager?.adapter?.notifyDataSetChanged()
+        }
+    }
+
+    fun currentEntry(): Entry? {
+        val position = binding?.viewPager?.currentItem ?: -1
+        try {
+            val entryId = entriesFragment.entriesAdapter.getItemId(position - 1)
+            return realm.where(Entry::class.java).equalTo("id", entryId).findFirst()
+        } catch (_: ArrayIndexOutOfBoundsException) {
+            return null
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        entryWatcher.removeAllChangeListeners()
         realm.close()
     }
 
@@ -39,37 +57,52 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
 
         binding.viewPager.adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
             override fun getCount(): Int {
-                return entryIds.size
+                return entriesFragment.entriesAdapter.itemCount + 2
             }
 
             override fun getItem(position: Int): Fragment {
-                return DetailPageFragment.create(entryIds[position])
+                val itemId = if (position == 0 || position == count - 1) {
+                    -1
+                } else {
+                    entriesFragment.entriesAdapter.getItemId(position - 1).toInt()
+                }
+                return DetailPageFragment.create(itemId)
             }
         }
 
         binding.viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
-            override fun onPageSelected(position: Int) = selectedPage(position)
+            override fun onPageSelected(position: Int) {
+                entriesFragment.childDisplayedEntryId(currentEntry()?.id ?: -1)
+                updateToolbar()
+            }
             override fun onPageScrollStateChanged(state: Int) {}
         })
 
-        binding.toolbarStarred.setOnClickListener {
-            if (currentEntry != null)
-                Entry.setStarred(context, realm, currentEntry!!, !currentEntry!!.starred)
+        binding.toolbarStarred.setOnClickListener { v ->
+            val current = currentEntry()
+            if (current != null) {
+                Entry.setStarred(context, realm, current, !current.starred)
+                v.isSelected = !current.starred
+            }
         }
-        binding.toolbarUnread.setOnClickListener {
-            if (currentEntry != null)
-                Entry.setUnread(context, realm, currentEntry!!, !currentEntry!!.unread)
+        binding.toolbarUnread.setOnClickListener { v ->
+            val current = currentEntry()
+            if (current != null) {
+                Entry.setUnread(context, realm, current, !current.unread)
+                v.isSelected = !current.unread
+            }
         }
         binding.toolbarOpen.setOnClickListener {
-            if (currentEntry != null)
-                Web.openInBrowser(activity, currentEntry!!.url)
+            val current = currentEntry()
+            if (current != null)
+                Web.openInBrowser(activity, current.url)
         }
         binding.toolbarShare.setOnClickListener {
-            if (currentEntry != null) {
+            if (currentEntry() != null) {
                 val shareIntent = Intent(Intent.ACTION_SEND)
                 shareIntent.type = "text/plain"
-                shareIntent.putExtra(Intent.EXTRA_TEXT, currentEntry!!.url)
+                shareIntent.putExtra(Intent.EXTRA_TEXT, currentEntry()!!.url)
                 val chooser = Intent.createChooser(shareIntent, null)
                 startActivity(chooser)
             }
@@ -83,51 +116,29 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
 
     override fun onResume() {
         super.onResume()
-        if (arguments.containsKey(INITIAL_ENTRY)) {
-            val index = entryIds.indexOf(arguments.getInt(INITIAL_ENTRY))
-            if (index >= 0 && index < entryIds.size) {
-                binding?.viewPager?.setCurrentItem(index, false)
-                selectedPage(index)
-            }
-            arguments.remove(INITIAL_ENTRY)
+        if (arguments.containsKey(INITIAL_INDEX)) {
+            binding?.viewPager?.setCurrentItem(arguments.getInt(INITIAL_INDEX) + 1, false)
+            arguments.remove(INITIAL_INDEX)
         } else {
             // need to fire selectedPage to render the menu properly
-            selectedPage(binding?.viewPager?.currentItem ?: 0)
+            updateToolbar()
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        currentEntry?.removeAllChangeListeners()
-        currentEntry = null
-    }
-
-    private fun selectedPage(position: Int) {
-        val entryId = entryIds[position]
-        Timber.i("Selected position $position == entry $entryId")
-        if (targetFragment is EntriesFragment) {
-            (targetFragment as EntriesFragment).childDisplayedEntryId(entryId)
+    private fun updateToolbar() {
+        val current = currentEntry()
+        if (current == null) {
+            activity?.onBackPressed()
+            return
         }
-        currentEntry?.removeAllChangeListeners()
-        if (entryId == -1) {
-            activity.onBackPressed()
-        } else {
-            currentEntry = Entry.byId(realm, entryId).findFirstAsync()
-            currentEntry?.addChangeListener { _: Entry -> render() }
-        }
-    }
-
-    internal fun render() {
-        Timber.i("Rendering $currentEntry")
-        binding?.entry = currentEntry
+        binding?.entry = current
     }
 
     companion object {
-       fun create(entryIds: List<Int>, currentEntryId: Int): DetailFragment {
+        fun create(currentIndex: Int): DetailFragment {
             val fragment = DetailFragment()
             fragment.arguments = Bundle()
-            fragment.arguments.putIntegerArrayList(ENTRY_IDS, ArrayList(entryIds))
-            fragment.arguments.putInt(INITIAL_ENTRY, currentEntryId)
+            fragment.arguments.putInt(INITIAL_INDEX, currentIndex)
             return fragment
         }
     }
