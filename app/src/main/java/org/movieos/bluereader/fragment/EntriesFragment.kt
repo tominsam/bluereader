@@ -302,25 +302,27 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     data class FeedRow(
             val name: String?,
-            val subscriptions: MutableList<Subscription> = mutableListOf(),
+            val subscriptions: List<Subscription>,
             val selected: Boolean) {
         val unread: Int
-        get() = subscriptions.sumBy { it.unreadCount }
+            get() = subscriptions.sumBy { it.unreadCount }
     }
 
     private fun buildFeeds(builder: BindingAdapter.Builder) {
         val allSubscriptions = realm.where(Subscription::class.java).findAll()
+        val untagged = allSubscriptions.toMutableList()
 
         // Group subs into tags
         val taggedSubscriptions: MutableMap<String, FeedRow> = mutableMapOf()
         for (tagging in realm.where(Tagging::class.java).findAll()) {
             val name = tagging.name ?: continue
             val subscription = tagging.subscription ?: continue
+            untagged.remove(tagging.subscription)
 
             if (taggedSubscriptions[name] == null) {
-                taggedSubscriptions[name] = FeedRow(name, selected = filterName == name)
+                taggedSubscriptions[name] = FeedRow(name, selected = filterName == name, subscriptions = mutableListOf())
             }
-            taggedSubscriptions[name]!!.subscriptions += subscription
+            (taggedSubscriptions[name]!!.subscriptions as MutableList) += subscription
         }
 
         // Add "all entries" row
@@ -328,6 +330,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         // Add a row per tag
         taggedSubscriptions.values.sortedBy { it.name }.forEachIndexed { index, feedRow ->
             addFeedrow(builder, index, feedRow)
+        }
+        if (untagged.isNotEmpty()) {
+            addFeedrow(builder, -2, FeedRow("Untagged", selected = false, subscriptions = untagged))
         }
 
     }
@@ -356,7 +361,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         if (expanded) {
             for (subscription in feedRow.subscriptions.sortedBy { it.title }) {
                 builder.addRow(FeedRowBinding::class.java, index * 100000 + subscription.id) { rowBinding, view ->
-                    rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = filterFeed == listOf(subscription.feedId))
+                    rowBinding.feedRow = FeedRow(subscription.title ?: "", selected = filterFeed == listOf(subscription.feedId), subscriptions = listOf(subscription))
                     rowBinding.expand.visibility = View.INVISIBLE
                     rowBinding.expand.setOnClickListener(null)
                     view.setOnClickListener {
