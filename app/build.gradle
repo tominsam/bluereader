@@ -54,7 +54,7 @@ dependencies {
     compile "com.android.support:design:$support_version"
     compile "com.android.support:customtabs:$support_version"
 
-    compile 'com.google.android.gms:play-services-auth:11.0.0'
+    compile 'com.google.android.gms:play-services-auth:11.0.1'
 
     // http://square.github.io/retrofit/
     compile 'com.squareup.retrofit2:retrofit:2.2.0'
