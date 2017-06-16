@@ -22,7 +22,10 @@ import org.movieos.bluereader.model.Entry
 import org.movieos.bluereader.model.Subscription
 import org.movieos.bluereader.model.SyncState
 import org.movieos.bluereader.model.Tagging
-import org.movieos.bluereader.utilities.*
+import org.movieos.bluereader.utilities.BindingAdapter
+import org.movieos.bluereader.utilities.EntriesAdapter
+import org.movieos.bluereader.utilities.Settings
+import org.movieos.bluereader.utilities.SyncTask
 import timber.log.Timber
 import java.text.DateFormat
 
@@ -65,7 +68,6 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     init {
         // Every time any entries change, rebuld the displayed list. Not very efficient.
         entryWatcher.addChangeListener { _: RealmResults<Entry> ->
-            Timber.i("realm changed")
             render()
         }
 
@@ -97,7 +99,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             filterFeed = savedInstanceState.getIntegerArrayList(BUNDLE_FITER_FEED) ?: emptyList()
             expandedTaggings = savedInstanceState.getStringArrayList(BUNDLE_EXPANDED_TAGGINGS).toHashSet()
         }
-        syncState.addChangeListener { state: RealmResults<SyncState> -> displaySyncTime(state.first()) }
+        syncState.addChangeListener { state: RealmResults<SyncState> -> if (state.isNotEmpty()) displaySyncTime(state.first()) }
 
     }
 
@@ -236,20 +238,16 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         binding?.navigationFeeds?.isSelected = viewType == Entry.ViewType.FEEDS
 
         if (viewType == Entry.ViewType.FEEDS) {
-            measureTimeMillis("feeds") {
-                val builder = BindingAdapter.Builder()
-                buildFeeds(builder)
-                feedsAdapter.fromBuilder(builder)
-                if (binding?.recyclerView?.adapter != feedsAdapter) {
-                    binding?.recyclerView?.adapter = feedsAdapter
-                }
+            val builder = BindingAdapter.Builder()
+            buildFeeds(builder)
+            feedsAdapter.fromBuilder(builder)
+            if (binding?.recyclerView?.adapter != feedsAdapter) {
+                binding?.recyclerView?.adapter = feedsAdapter
             }
         } else {
-            measureTimeMillis("entries") {
-                entriesAdapter.entries = buildEntries()
-                if (binding?.recyclerView?.adapter != entriesAdapter) {
-                    binding?.recyclerView?.adapter = entriesAdapter
-                }
+            entriesAdapter.entries = buildEntries()
+            if (binding?.recyclerView?.adapter != entriesAdapter) {
+                binding?.recyclerView?.adapter = entriesAdapter
             }
         }
 
