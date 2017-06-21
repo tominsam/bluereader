@@ -23,6 +23,9 @@ class EntriesAdapter(
     }
 
     override fun getItemId(position: Int): Long {
+        if (entries == null) {
+            return 0
+        }
         return entries!![position].id.toLong()
     }
 

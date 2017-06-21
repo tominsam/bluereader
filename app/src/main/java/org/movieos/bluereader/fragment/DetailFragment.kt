@@ -74,7 +74,8 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
             override fun onPageSelected(position: Int) {
                 entriesFragment.childDisplayedEntryId(currentEntry()?.id ?: -1)
-                updateToolbar()
+                if (isResumed)
+                    updateToolbar()
             }
             override fun onPageScrollStateChanged(state: Int) {}
         })
