@@ -28,7 +28,6 @@ class SyncTask private constructor(
     }
 
     override fun doInBackground(vararg params: Void): SyncStatus {
-        onProgressUpdate("Syncing...")
         val api = Feedbin(context)
         try {
             // Push state. We store the date we pushed up until.
