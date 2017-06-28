@@ -8,7 +8,7 @@ import org.movieos.bluereader.databinding.EntryRowBinding
 import org.movieos.bluereader.model.Entry
 
 class EntriesAdapter(
-        val tapListener: (entry: Entry, index: Int) -> Unit,
+        val tapListener: (entryIds: List<Int>, index: Int) -> Unit,
         val starListener: (entry: Entry, newValue: Boolean) -> Boolean
 ) : RecyclerView.Adapter<BindingAdapter.FeedViewHolder>() {
 
@@ -45,7 +45,7 @@ class EntriesAdapter(
             binding.entry = entry
             binding.subscription = database.entryDao().subscriptionForFeed(binding.entry?.feedId ?: -1)
             binding.executePendingBindings()
-            holder.itemView.setOnClickListener { tapListener.invoke(entry, holder.adapterPosition) }
+            holder.itemView.setOnClickListener { tapListener.invoke(rows, holder.adapterPosition) }
             binding.star.setOnClickListener { binding.star.isSelected = starListener.invoke(entry, !it.isSelected) }
         }
     }

@@ -53,18 +53,19 @@ class SyncTask private constructor(
                 return SyncStatus(e)
             }
         }
-        onProgressUpdate("")
         Thread.sleep(500);
         return SyncStatus(true, "Done")
     }
 
     override fun onProgressUpdate(vararg values: String) {
         for (value in values) {
+            Timber.i(value)
             MainApplication.bus.post(SyncStatus(false, value))
         }
     }
 
     override fun onPostExecute(syncStatus: SyncStatus) {
+        Timber.i("complete")
         MainApplication.bus.post(syncStatus)
     }
 
@@ -191,9 +192,12 @@ class SyncTask private constructor(
         // Now we need to update everything in the database - the server doesn't return entries
         // new in the sync list just because their unread state changed.
         publishProgress("Updating unread state")
-        database.entryDao().updateUnreadState(unread.toTypedArray())
+        // super tiresome SQL here for speed purposes.
+        database.entryDao().updateUnreadState(true, unread.toTypedArray())
+        database.entryDao().updateUnreadState(false, (database.entryDao().getUnreadIds() - unread).toTypedArray())
         publishProgress("Updating starred state")
-        database.entryDao().updateStarredState(starred.toTypedArray())
+        database.entryDao().updateStarredState(true, starred.toTypedArray())
+        database.entryDao().updateStarredState(false, (database.entryDao().getStarredIds() - starred).toTypedArray())
 
         // Update the unread count of each subscription object
         publishProgress("Updating unread counts")
@@ -254,6 +258,10 @@ class SyncTask private constructor(
             isComplete = true
             this.exception = exception
             status = exception.message ?: exception.toString()
+        }
+
+        override fun toString(): String {
+            return "<SyncStatus $isComplete $status $exception>"
         }
     }
 

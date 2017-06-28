@@ -2,8 +2,6 @@ package org.movieos.bluereader.fragment
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.view.ViewPager
@@ -13,12 +11,14 @@ import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.databinding.DetailFragmentBinding
 import org.movieos.bluereader.model.Entry
-import org.movieos.bluereader.utilities.SyncTask
 import org.movieos.bluereader.utilities.Web
 
 private const val INITIAL_INDEX = "initial_index"
+private const val INITIAL_ENTRYIDS = "initial_entryids"
 
 class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
+
+    var entryIds: List<Int> = emptyList()
 
     val database: MainDatabase
         get() = (activity.application as MainApplication).database
@@ -27,13 +27,18 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
         get() = targetFragment as EntriesFragment
 
     fun currentEntry(): Entry? {
-        val position = binding?.viewPager?.currentItem ?: -1
-        try {
-            val entryId = entriesFragment.entriesAdapter.getItemId(position - 1)
-            return database.entryDao().entryById(entryId.toInt())
-        } catch (_: IndexOutOfBoundsException) {
-            return null
-        }
+        return database.entryDao().entryById(currentEntryId())
+    }
+
+    fun currentEntryId(): Int {
+        val position = binding?.viewPager?.currentItem ?: return -1
+        return entryIds[position]
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // different negative IDs because they're also the adapter item Ids.
+        entryIds = arrayListOf(-1) + arguments.getIntegerArrayList(INITIAL_ENTRYIDS) + arrayListOf(-2)
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): DetailFragmentBinding {
@@ -43,15 +48,11 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
 
         binding.viewPager.adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
             override fun getCount(): Int {
-                return entriesFragment.entriesAdapter.itemCount + 2
+                return entryIds.size
             }
 
             override fun getItem(position: Int): Fragment {
-                val itemId = if (position == 0 || position == count - 1) {
-                    -1
-                } else {
-                    entriesFragment.entriesAdapter.getItemId(position - 1).toInt()
-                }
+                val itemId = entryIds[position]
                 return DetailPageFragment.create(itemId)
             }
         }
@@ -59,7 +60,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
         binding.viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
             override fun onPageSelected(position: Int) {
-                entriesFragment.childDisplayedEntryId(currentEntry()?.id ?: -1)
+                entriesFragment.childDisplayedEntryId(currentEntryId())
                 if (isResumed)
                     updateToolbar()
             }
@@ -88,10 +89,11 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
                 Web.openInBrowser(activity, current.url)
         }
         binding.toolbarShare.setOnClickListener {
-            if (currentEntry() != null) {
+            val entry = currentEntry()
+            if (entry != null) {
                 val shareIntent = Intent(Intent.ACTION_SEND)
                 shareIntent.type = "text/plain"
-                shareIntent.putExtra(Intent.EXTRA_TEXT, currentEntry()!!.url)
+                shareIntent.putExtra(Intent.EXTRA_TEXT, entry.url)
                 val chooser = Intent.createChooser(shareIntent, null)
                 startActivity(chooser)
             }
@@ -124,10 +126,11 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
     }
 
     companion object {
-        fun create(currentIndex: Int): DetailFragment {
+        fun create(entryIds: List<Int>, currentIndex: Int): DetailFragment {
             val fragment = DetailFragment()
             fragment.arguments = Bundle()
             fragment.arguments.putInt(INITIAL_INDEX, currentIndex)
+            fragment.arguments.putIntegerArrayList(INITIAL_ENTRYIDS, ArrayList(entryIds))
             return fragment
         }
     }

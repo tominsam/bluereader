@@ -67,8 +67,8 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         get() = (activity.application as MainApplication).database
 
     init {
-        entriesAdapter = EntriesAdapter({ _, index ->
-            val fragment = DetailFragment.create(index)
+        entriesAdapter = EntriesAdapter({ entryIds, index ->
+            val fragment = DetailFragment.create(entryIds, index)
             fragment.setTargetFragment(this, 0)
             fragment.enterTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)
             fragment.returnTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)
@@ -187,6 +187,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     @Suppress("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun syncStatus(status: SyncTask.SyncStatus) {
+        Timber.i("seen status $status")
         if (status.isComplete || TextUtils.isEmpty(status.status)) {
             if (binding?.swipeRefreshLayout?.isRefreshing ?: false) {
                 currentIds.clear()
@@ -196,6 +197,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             if (currentIds.isEmpty()) {
                 render()
             }
+            displaySyncTime(database.entryDao().syncState())
         } else {
             binding?.toolbar?.subtitle = status.status
         }

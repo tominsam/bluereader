@@ -23,11 +23,17 @@ abstract class EntryDao {
     @Query("SELECT id FROM Entry WHERE feedId in (:arg0) ORDER BY published DESC LIMIT 300")
     abstract fun allVisible(feedIds: Array<Int>): List<Int>
 
-    @Query("UPDATE Entry SET unread = (id in (:arg0))")
-    abstract fun updateUnreadState(unread: Array<Int>)
+    @Query("UPDATE Entry SET unread = :arg0 WHERE id in (:arg1)")
+    abstract fun updateUnreadState(unread: Boolean, entryIds: Array<Int>)
 
-    @Query("UPDATE Entry SET starred = (id in (:arg0))")
-    abstract fun updateStarredState(starred: Array<Int>)
+    @Query("SELECT id FROM Entry WHERE unread = 1")
+    abstract fun getUnreadIds(): List<Int>
+
+    @Query("UPDATE Entry SET starred = :arg0 WHERE id in (:arg1)")
+    abstract fun updateStarredState(starred: Boolean, entryIds: Array<Int>)
+
+    @Query("SELECT id FROM Entry WHERE starred = 1")
+    abstract fun getStarredIds(): List<Int>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract fun updateEntries(entries: Array<Entry>)
