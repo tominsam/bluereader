@@ -1,2 +1,8 @@
 #!/bin/bash -ex
 ./gradlew clean publishApkRelease
+
+echo ""
+echo ""
+echo ""
+echo ""
+echo "Now bump verison code!"
