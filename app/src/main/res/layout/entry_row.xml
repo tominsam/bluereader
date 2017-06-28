@@ -11,6 +11,10 @@
             name="entry"
             type="org.movieos.bluereader.model.Entry"
             />
+        <variable
+            name="subscription"
+            type="org.movieos.bluereader.model.Subscription"
+            />
     </data>
 
     <FrameLayout
@@ -43,16 +47,16 @@
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:lines="1"
-                    android:text="@{entry.displayAuthor}"
+                    android:layout_marginEnd="8dp"
+                    android:text="@{entry.displayAuthor(subscription)}"
                     android:textAppearance="@style/text_small"
                     android:textColor="?android:textColorSecondary"
                     tools:text="Entry author"
                     />
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:ellipsize="end"
                     android:gravity="end"
                     android:lines="1"

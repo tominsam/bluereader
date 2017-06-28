@@ -2,14 +2,12 @@ package org.movieos.bluereader.utilities
 
 import android.content.Context
 import android.os.AsyncTask
-import io.realm.Realm
-import io.realm.Sort
+import org.movieos.bluereader.BuildConfig
 import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.api.Feedbin
 import org.movieos.bluereader.api.PageLinks
+import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.model.Entry
-import org.movieos.bluereader.model.LocalState
-import org.movieos.bluereader.model.Subscription
 import org.movieos.bluereader.model.SyncState
 import retrofit2.Response
 import timber.log.Timber
@@ -22,6 +20,9 @@ class SyncTask private constructor(
         val pushOnly: Boolean
 ) : AsyncTask<Void, String, SyncTask.SyncStatus>() {
 
+    val database: MainDatabase
+        get() = (context.applicationContext as MainApplication).database
+
     private fun start() {
         executeOnExecutor(SYNC_EXECUTOR)
     }
@@ -29,31 +30,31 @@ class SyncTask private constructor(
     override fun doInBackground(vararg params: Void): SyncStatus {
         onProgressUpdate("Syncing...")
         val api = Feedbin(context)
-        val realm = Realm.getDefaultInstance()
         try {
             // Push state. We store the date we pushed up until.
-            pushState(api, realm)
+            pushState(api)
 
             if (!pushOnly) {
                 // Pull server state
-                getSubscriptions(api, realm)
-                getTaggings(api, realm)
-                getEntries(api, realm)
+                getSubscriptions(api)
+                getTaggings(api)
+                getEntries(api)
 
                 // update last sync date to be "now"
-                realm.executeTransaction { it.copyToRealmOrUpdate(SyncState(1, Date())) }
+                database.entryDao().updateSyncState(SyncState(1, Date()))
             }
 
         } catch (e: Throwable) {
             Timber.e(e)
+            Thread.sleep(500);
             if (pushOnly) {
                 return SyncStatus(true, "Failed")
             } else {
                 return SyncStatus(e)
             }
-        } finally {
-            realm.close()
         }
+        onProgressUpdate("")
+        Thread.sleep(500);
         return SyncStatus(true, "Done")
     }
 
@@ -67,39 +68,44 @@ class SyncTask private constructor(
         MainApplication.bus.post(syncStatus)
     }
 
-    private fun pushState(api: Feedbin, realm: Realm) {
-        publishProgress("Pushing local state")
+    private fun pushState(api: Feedbin) {
         val addStarred = HashSet<Int>()
         val removeStarred = HashSet<Int>()
         val addUnread = HashSet<Int>()
         val removeUnread = HashSet<Int>()
 
-        // make list solid here so that later changes are predictable
-        val localStates = ArrayList(LocalState.all(realm))
+        val localStates = database.entryDao().localState()
+        if (localStates.isEmpty()) {
+            Timber.i("No local state to push")
+            return
+        }
+
+        publishProgress("Pushing local state")
 
         // We'll roll through the list of local state changes and build
         // authoritative lists of "last touch" state - if you star something
         // and unstar it in the same loop, we'll only record the last change
         // you made.
         for (localState in localStates) {
+            Timber.i("pushing $localState")
             val id = localState.entryId
             val markStarred = localState.markStarred
             if (markStarred != null) {
-                addStarred.remove(id)
-                removeStarred.remove(id)
                 if (markStarred) {
                     addStarred.add(id)
+                    removeStarred.remove(id)
                 } else {
+                    addStarred.remove(id)
                     removeStarred.add(id)
                 }
             }
             val markUnread = localState.markUnread
             if (markUnread != null) {
-                addUnread.remove(id)
-                removeUnread.remove(id)
                 if (markUnread) {
                     addUnread.add(id)
+                    removeUnread.remove(id)
                 } else {
+                    addUnread.remove(id)
                     removeUnread.add(id)
                 }
             }
@@ -107,65 +113,64 @@ class SyncTask private constructor(
 
         // Push state to the server
         if (!addStarred.isEmpty()) {
+            Timber.i("addStarred $addStarred")
             api.addStarred(addStarred).execute()
         }
         if (!removeStarred.isEmpty()) {
+            Timber.i("removeStarred $removeStarred")
             api.removeStarred(removeStarred).execute()
         }
         if (!addUnread.isEmpty()) {
+            Timber.i("addUnread $addUnread")
             api.addUnread(addUnread).execute()
         }
         if (!removeUnread.isEmpty()) {
+            Timber.i("removeUnread $removeUnread")
             api.removeUnread(removeUnread).execute()
         }
 
         // and delete the local state objects that we've handled
         if (!localStates.isEmpty()) {
-            realm.executeTransaction {
-                for (localState in localStates) {
-                    localState.deleteFromRealm()
-                }
-            }
+            database.entryDao().deleteLocalState(localStates.toTypedArray())
         }
     }
 
-    private fun getSubscriptions(api: Feedbin, realm: Realm) {
-        // TODO remove subscriptions
+    private fun getSubscriptions(api: Feedbin) {
         publishProgress("Syncing subscriptions")
-        val subscriptions = api.subscriptions(null).execute()
-        realm.executeTransaction { it.copyToRealmOrUpdate(subscriptions.body()) }
+        val subscriptions = api.subscriptions().execute()
+        database.entryDao().wipeSubscriptions()
+        database.entryDao().updateSubscriptions(subscriptions.body().toTypedArray())
     }
 
-    private fun getTaggings(api: Feedbin, realm: Realm) {
-        // TODO remove tags
+    private fun getTaggings(api: Feedbin) {
         publishProgress("Syncing tags")
         val taggings = api.taggings().execute()
         for (tagging in taggings.body()) {
-            tagging.subscription = realm.where(Subscription::class.java).equalTo("feedId", tagging.feedId).findFirst()
+            tagging.subscription = database.entryDao().subscriptionForFeed(tagging.feedId)
         }
-
-        realm.executeTransaction { it.copyToRealmOrUpdate(taggings.body()) }
+        database.entryDao().wipeTaggings()
+        database.entryDao().updateTaggings(taggings.body().toTypedArray())
     }
 
-    private fun getEntries(api: Feedbin, realm: Realm) {
+    private fun getEntries(api: Feedbin) {
         // We need these first so we can add new entries in the right state
         publishProgress("Syncing unread state")
         val unread = api.unread().execute().body()
+
         publishProgress("Syncing starred state")
         val starred = api.starred().execute().body()
 
         publishProgress("Syncing entries")
-        val latestEntry = realm.where(Entry::class.java).findAllSorted("createdAt", Sort.DESCENDING).first(null)
-        var entriesSince: Date? = latestEntry?.createdAt
-        if (SyncState.latest(realm).findFirst() == null) {
+        var latestEntry = database.entryDao().latestEntryDate()
+        if (database.entryDao().syncState() == null) {
             // ignore the incremental sync stuff until we have at least one successful sync
-            entriesSince = null
+            latestEntry = null
         }
 
-        var entries = api.entries(entriesSince).execute()
+        var entries = api.entries(latestEntry).execute()
         var entryCount = 0
         while (true) {
-            insertEntries(realm, unread, starred, entries)
+            insertEntries(unread, starred, entries)
 
             // Is there another page?
             val links = PageLinks(entries.raw())
@@ -185,29 +190,30 @@ class SyncTask private constructor(
 
         // Now we need to update everything in the database - the server doesn't return entries
         // new in the sync list just because their unread state changed.
-        //
-        // We'll also count global unread entries at this point
-        realm.executeTransaction { r ->
-            val unreadCounts = mutableMapOf<Int, Int>()
-            for (entry in r.where(Entry::class.java).findAll()) {
-                entry.unread = unread.contains(entry.id)
-                entry.starred = starred.contains(entry.id)
-                if (entry.unread) {
-                    unreadCounts[entry.feedId] = (unreadCounts[entry.feedId] ?: 0) + 1
-                }
-            }
-            for (subscription in r.where(Subscription::class.java).findAll()) {
-                subscription.unreadCount = unreadCounts[subscription.feedId] ?: 0
-            }
+        publishProgress("Updating unread state")
+        database.entryDao().updateUnreadState(unread.toTypedArray())
+        publishProgress("Updating starred state")
+        database.entryDao().updateStarredState(starred.toTypedArray())
+
+        // Update the unread count of each subscription object
+        publishProgress("Updating unread counts")
+        val unreadCounts = mutableMapOf<Int, Int>()
+        for ((feedId, count) in database.entryDao().countUnread()) {
+            unreadCounts.put(feedId, count)
+        }
+        for (subscription in database.entryDao().subscriptions()) {
+            subscription.unreadCount = unreadCounts[subscription.feedId] ?: 0
+            database.entryDao().updateSubscriptions(arrayOf(subscription))
         }
 
         // Finally, if there's anything in the unread or starred lists we haven't seen,
         // fetch those explicitly (eg, unread or starred entries more than MAX_ENTRIES_COUNT
         // into the past - we want those lists to be complete no matter how far back we need
         // to go
+        publishProgress("Backfilling")
         var missing: List<Int> = listOf()
-        missing += unread.filter { Entry.byId(realm, it).findFirst() == null }
-        missing += starred.filter { Entry.byId(realm, it).findFirst() == null }
+        missing += unread.filter { database.entryDao().entryById(it) == null }
+        missing += starred.filter { database.entryDao().entryById(it) == null }
         missing = missing.distinct()
 
         while (!missing.isEmpty()) {
@@ -215,21 +221,19 @@ class SyncTask private constructor(
             val page = missing.sliceSafely(0, CATCHUP_SIZE)
             missing = missing.sliceSafely(CATCHUP_SIZE, missing.size)
             val missingEntries = api.entries(page).execute()
-            insertEntries(realm, unread, starred, missingEntries)
+            insertEntries(unread, starred, missingEntries)
         }
 
     }
 
-    private fun insertEntries(realm: Realm, unread: List<Int>, starred: List<Int>, response: Response<List<Entry>>) {
+    private fun insertEntries(unread: List<Int>, starred: List<Int>, response: Response<List<Entry>>) {
         for (entry in response.body()) {
-            // Connect entries to their subscriptions
-            entry.subscription = realm.where(Subscription::class.java).equalTo("feedId", entry.feedId).findFirst()
             // Set the right read/unread state
             entry.starred = starred.contains(entry.id)
             entry.unread = unread.contains(entry.id)
         }
         // Insert all entries at once
-        realm.executeTransaction { it.copyToRealmOrUpdate(response.body()) }
+        database.entryDao().updateEntries(response.body().toTypedArray())
     }
 
     class SyncStatus {
@@ -258,21 +262,19 @@ class SyncTask private constructor(
         val SYNC_EXECUTOR: Executor = Executors.newSingleThreadExecutor()
 
         private val CATCHUP_SIZE = 20
-        private val MAX_ENTRIES_COUNT = 10_000
+        private val MAX_ENTRIES_COUNT = if (BuildConfig.DEBUG) 10_000 else 2_000
 
         fun sync(context: Context, force: Boolean, pushOnly: Boolean) {
             if (Settings.getCredentials(context) == null) {
                 return
             }
-            val realm = Realm.getDefaultInstance()
-            val state = SyncState.latest(realm).findFirst()
+            val state = (context.applicationContext as MainApplication).database.entryDao().syncState()
             if (state == null || state.isStale || force || pushOnly) {
                 Timber.i("Syncing")
                 SyncTask(context.applicationContext, pushOnly).start()
             } else {
                 Timber.i("Not syncing")
             }
-            realm.close()
         }
     }
 }

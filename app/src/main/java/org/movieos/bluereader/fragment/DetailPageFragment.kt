@@ -14,10 +14,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.*
 import android.webkit.WebView.HitTestResult
-import io.realm.Realm
+import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.R
+import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.databinding.DetailPageFragmentBinding
 import org.movieos.bluereader.model.Entry
+import org.movieos.bluereader.model.Subscription
 import org.movieos.bluereader.utilities.Web
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -27,6 +29,9 @@ import java.util.*
 private const val ENTRY_ID = "entry_id"
 
 class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
+
+    val database: MainDatabase
+        get() = (activity.application as MainApplication).database
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): DetailPageFragmentBinding {
@@ -49,7 +54,9 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
         registerForContextMenu(binding.webView)
 
-        val entry: Entry? = Realm.getDefaultInstance().use { Entry.byId(it, arguments.getInt(ENTRY_ID)).findFirst() }
+        val entry: Entry? = database.entryDao().entryById(arguments.getInt(ENTRY_ID))
+        val subscription: Subscription? = database.entryDao().subscriptionForFeed(entry?.feedId ?: -1)
+
         if (entry == null) {
             binding.webView.visibility = View.GONE
             binding.fake.visibility = View.GONE
@@ -58,7 +65,7 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
                     .replace("{{body}}", safeContent(entry.content) ?: "")
                     .replace("{{title}}", Html.escapeHtml(entry.title ?: ""))
                     .replace("{{link}}", Html.escapeHtml(entry.url ?: ""))
-                    .replace("{{author}}", Html.escapeHtml(entry.displayAuthor))
+                    .replace("{{author}}", Html.escapeHtml(entry.displayAuthor(subscription)))
                     .replace("{{background}}", String.format("%08X", ContextCompat.getColor(activity, R.color.background)).substring(2, 8))
                     .replace("{{textPrimary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_primary)).substring(2, 8))
                     .replace("{{textSecondary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_secondary)).substring(2, 8))

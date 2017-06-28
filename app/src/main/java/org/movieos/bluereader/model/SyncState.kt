@@ -1,20 +1,20 @@
 package org.movieos.bluereader.model
 
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.RealmQuery
-import io.realm.annotations.PrimaryKey
+import android.arch.persistence.room.Entity
+import android.arch.persistence.room.Ignore
+import android.arch.persistence.room.PrimaryKey
 import java.util.*
 
-open class SyncState : RealmObject {
+@Entity
+open class SyncState {
     @PrimaryKey
-    internal var id: Int = 0
+    var id: Int = 0
 
     var timeStamp: Date = Date()
-        internal set
 
     constructor()
 
+    @Ignore
     constructor(id: Int, timeStamp: Date) {
         this.id = id
         this.timeStamp = timeStamp
@@ -23,11 +23,5 @@ open class SyncState : RealmObject {
     val isStale: Boolean
         get() = Date().time - timeStamp.time > 1000 * 60 * 5
 
-    companion object {
-
-        fun latest(realm: Realm): RealmQuery<SyncState> {
-            return realm.where(SyncState::class.java).equalTo("id", 1)
-        }
-    }
 
 }

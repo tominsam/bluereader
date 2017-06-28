@@ -39,8 +39,8 @@ class Feedbin(context: Context) {
         api = api(context, Settings.getCredentials(context))
     }
 
-    fun subscriptions(since: Date?): Call<List<Subscription>> {
-        return api.subscriptions(formatDate(since))
+    fun subscriptions(): Call<List<Subscription>> {
+        return api.subscriptions()
     }
 
     fun entries(since: Date?): Call<List<Entry>> {
@@ -112,7 +112,7 @@ class Feedbin(context: Context) {
         fun authentication(): Call<Void>
 
         @GET("subscriptions.json")
-        fun subscriptions(@Query("since") since: String?): Call<List<Subscription>>
+        fun subscriptions(): Call<List<Subscription>>
 
         @GET("entries.json")
         fun entries(@Query("since") since: String?): Call<List<Entry>>

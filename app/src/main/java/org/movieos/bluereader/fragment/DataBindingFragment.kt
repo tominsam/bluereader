@@ -1,13 +1,13 @@
 package org.movieos.bluereader.fragment
 
+import android.arch.lifecycle.LifecycleFragment
 import android.databinding.ViewDataBinding
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 
-abstract class DataBindingFragment<B : ViewDataBinding> : Fragment() {
+abstract class DataBindingFragment<B : ViewDataBinding> : LifecycleFragment() {
 
     var binding: B? = null
         protected set

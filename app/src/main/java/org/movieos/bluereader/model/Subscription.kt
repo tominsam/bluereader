@@ -1,38 +1,37 @@
 package org.movieos.bluereader.model
 
+import android.arch.persistence.room.Entity
+import android.arch.persistence.room.Index
+import android.arch.persistence.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
-import io.realm.annotations.Required
 import java.util.*
 
-@Suppress("unused")
-open class Subscription : RealmObject() {
+@Entity(
+        indices = arrayOf(
+                Index("feedId")
+        )
+)
+open class Subscription {
 
     @SerializedName("id")
     @PrimaryKey
     var id: Int = 0
 
-    @Required
     @SerializedName("created_at")
     var createdAt: Date? = null
 
-    @Index
     @SerializedName("feed_id")
     var feedId: Int = 0
 
-    @Required
     @SerializedName("title")
     var title: String? = null
 
-    @Required
     @SerializedName("feed_url")
     var feedUrl: String? = null
 
-    @Required
     @SerializedName("site_url")
-    var siteUtl: String? = null
+    var siteUrl: String? = null
 
+    // This is locally generated, not fetched from the server
     var unreadCount: Int = 0
 }

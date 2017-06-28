@@ -13,7 +13,7 @@ buildscript {
     }
     dependencies {
         classpath "com.android.tools.build:gradle:$android_plugin_version"
-        classpath "io.realm:realm-gradle-plugin:3.3.2"
+        //classpath "io.realm:realm-gradle-plugin:3.3.2"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.github.triplet.gradle:play-publisher:1.2.0'
         // NOTE: Do not place your application dependencies here; they belong
@@ -22,6 +22,16 @@ buildscript {
 }
 
 allprojects {
+    // https://stackoverflow.com/questions/11760638/how-to-increase-the-error-limit-of-100-errors-on-intellij-idea
+    // data binding and room between them like to throw hundreds and hundreds of errors and
+    // only the very last one is ever meaningful
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xmaxerrs" << "4000"
+            options.compilerArgs << "-Xmaxwarns" << "4000"
+        }
+    }
+
     repositories {
         jcenter()
         maven {
