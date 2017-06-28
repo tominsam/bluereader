@@ -2,6 +2,8 @@ package org.movieos.bluereader.utilities
 
 import android.content.Context
 import android.os.AsyncTask
+import android.os.Handler
+import android.os.Looper
 import org.movieos.bluereader.BuildConfig
 import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.api.Feedbin
@@ -269,11 +271,19 @@ class SyncTask private constructor(
         private val CATCHUP_SIZE = 20
         private val MAX_ENTRIES_COUNT = if (BuildConfig.DEBUG) 10_000 else 2_000
 
+        fun pushSoon(context: Context) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (context.database().entryDao().localState().isNotEmpty()) {
+                    SyncTask.sync(context, false, true)
+                }
+            }, 5000)
+        }
+
         fun sync(context: Context, force: Boolean, pushOnly: Boolean) {
             if (Settings.getCredentials(context) == null) {
                 return
             }
-            val state = (context.applicationContext as MainApplication).database.entryDao().syncState()
+            val state = context.database().entryDao().syncState()
             if (state == null || state.isStale || force || pushOnly) {
                 Timber.i("Syncing")
                 SyncTask(context.applicationContext, pushOnly).start()

@@ -6,8 +6,6 @@ import android.arch.lifecycle.Observer
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.text.TextUtils
 import android.transition.TransitionInflater
 import android.view.LayoutInflater
@@ -79,11 +77,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                     .commit()
         }, { entry, newState ->
             database.entryDao().setStarred(entry.id, newState)
-            // push this change soon
-            Handler(Looper.getMainLooper()).postDelayed({
-                SyncTask.sync(activity, false, true)
-            }, 2000)
-
+            SyncTask.pushSoon(activity)
             newState
         })
     }
@@ -223,11 +217,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     fun childChangedEntryState() {
         binding?.recyclerView?.adapter?.notifyDataSetChanged()
-
-        // push this change soon
-        Handler(Looper.getMainLooper()).postDelayed({
-            SyncTask.sync(activity, false, true)
-        }, 5000)
+        SyncTask.pushSoon(activity)
     }
 
     private fun changeViewType(newViewType: Entry.ViewType) {
