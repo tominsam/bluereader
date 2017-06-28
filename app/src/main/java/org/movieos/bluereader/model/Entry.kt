@@ -72,4 +72,12 @@ class Entry {
         return String.format(Locale.US, "<Entry %d %s>", id, title)
     }
 
+    override fun equals(other: Any?): Boolean {
+        return other is Entry && id == other.id
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+
 }

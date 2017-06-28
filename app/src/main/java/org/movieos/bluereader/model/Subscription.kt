@@ -34,4 +34,14 @@ open class Subscription {
 
     // This is locally generated, not fetched from the server
     var unreadCount: Int = 0
+
+
+    override fun equals(other: Any?): Boolean {
+        return other is Subscription && id == other.id
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+
 }
