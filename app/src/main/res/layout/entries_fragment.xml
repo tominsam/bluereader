@@ -4,10 +4,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     >
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         >
 
         <android.support.v7.widget.Toolbar
@@ -24,8 +23,9 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:paddingBottom="?actionBarSize"
+            android:paddingTop="?actionBarSize"
             >
 
             <android.support.v4.widget.SwipeRefreshLayout
@@ -58,18 +58,29 @@
                     android:textAppearance="@style/text_title"
                     />
             </FrameLayout>
+
+            <!-- I really want a shadow on the toolbar, and elevation just won't do it
+            because elevation will never cast a shadow _above_ it, we're too far down
+            the screen. So we do it the old-fashioned way.  -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:background="@drawable/bottom_shadow"
+                android:layout_gravity="bottom"
+                />
         </FrameLayout>
 
         <LinearLayout
             android:id="@+id/bottom_navigation"
+            style="?toolbarStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
             android:background="@color/toolbar_background"
             android:divider="@drawable/toolbar_button_divider"
             android:gravity="center"
             android:minHeight="?actionBarSize"
             android:showDividers="middle"
-            android:theme="@style/AppTheme.ActionBarTheme"
             >
 
             <ImageButton
@@ -107,5 +118,5 @@
         </LinearLayout>
 
 
-    </LinearLayout>
+    </FrameLayout>
 </layout>
