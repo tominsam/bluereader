@@ -2,6 +2,7 @@ package org.movieos.bluereader.utilities
 
 import android.content.Context
 import android.os.AsyncTask
+import org.movieos.bluereader.BuildConfig
 import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.api.Feedbin
 import org.movieos.bluereader.api.PageLinks
@@ -45,12 +46,15 @@ class SyncTask private constructor(
 
         } catch (e: Throwable) {
             Timber.e(e)
+            Thread.sleep(500);
             if (pushOnly) {
                 return SyncStatus(true, "Failed")
             } else {
                 return SyncStatus(e)
             }
         }
+        onProgressUpdate("")
+        Thread.sleep(500);
         return SyncStatus(true, "Done")
     }
 
@@ -65,19 +69,25 @@ class SyncTask private constructor(
     }
 
     private fun pushState(api: Feedbin) {
-        publishProgress("Pushing local state")
         val addStarred = HashSet<Int>()
         val removeStarred = HashSet<Int>()
         val addUnread = HashSet<Int>()
         val removeUnread = HashSet<Int>()
 
         val localStates = database.entryDao().localState()
+        if (localStates.isEmpty()) {
+            Timber.i("No local state to push")
+            return
+        }
+
+        publishProgress("Pushing local state")
 
         // We'll roll through the list of local state changes and build
         // authoritative lists of "last touch" state - if you star something
         // and unstar it in the same loop, we'll only record the last change
         // you made.
         for (localState in localStates) {
+            Timber.i("pushing $localState")
             val id = localState.entryId
             val markStarred = localState.markStarred
             if (markStarred != null) {
@@ -103,15 +113,19 @@ class SyncTask private constructor(
 
         // Push state to the server
         if (!addStarred.isEmpty()) {
+            Timber.i("addStarred $addStarred")
             api.addStarred(addStarred).execute()
         }
         if (!removeStarred.isEmpty()) {
+            Timber.i("removeStarred $removeStarred")
             api.removeStarred(removeStarred).execute()
         }
         if (!addUnread.isEmpty()) {
+            Timber.i("addUnread $addUnread")
             api.addUnread(addUnread).execute()
         }
         if (!removeUnread.isEmpty()) {
+            Timber.i("removeUnread $removeUnread")
             api.removeUnread(removeUnread).execute()
         }
 
@@ -176,22 +190,27 @@ class SyncTask private constructor(
 
         // Now we need to update everything in the database - the server doesn't return entries
         // new in the sync list just because their unread state changed.
+        publishProgress("Updating unread state")
         database.entryDao().updateUnreadState(unread.toTypedArray())
+        publishProgress("Updating starred state")
         database.entryDao().updateStarredState(starred.toTypedArray())
 
         // Update the unread count of each subscription object
+        publishProgress("Updating unread counts")
         val unreadCounts = mutableMapOf<Int, Int>()
         for ((feedId, count) in database.entryDao().countUnread()) {
             unreadCounts.put(feedId, count)
         }
         for (subscription in database.entryDao().subscriptions()) {
             subscription.unreadCount = unreadCounts[subscription.feedId] ?: 0
+            database.entryDao().updateSubscriptions(arrayOf(subscription))
         }
 
         // Finally, if there's anything in the unread or starred lists we haven't seen,
         // fetch those explicitly (eg, unread or starred entries more than MAX_ENTRIES_COUNT
         // into the past - we want those lists to be complete no matter how far back we need
         // to go
+        publishProgress("Backfilling")
         var missing: List<Int> = listOf()
         missing += unread.filter { database.entryDao().entryById(it) == null }
         missing += starred.filter { database.entryDao().entryById(it) == null }
@@ -243,7 +262,7 @@ class SyncTask private constructor(
         val SYNC_EXECUTOR: Executor = Executors.newSingleThreadExecutor()
 
         private val CATCHUP_SIZE = 20
-        private val MAX_ENTRIES_COUNT = 10_000
+        private val MAX_ENTRIES_COUNT = if (BuildConfig.DEBUG) 10_000 else 2_000
 
         fun sync(context: Context, force: Boolean, pushOnly: Boolean) {
             if (Settings.getCredentials(context) == null) {

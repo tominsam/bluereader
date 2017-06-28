@@ -6,6 +6,9 @@ import android.arch.lifecycle.Observer
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.text.TextUtils
 import android.transition.TransitionInflater
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -76,6 +79,11 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                     .commit()
         }, { entry, newState ->
             database.entryDao().setStarred(entry.id, newState)
+            // push this change soon
+            Handler(Looper.getMainLooper()).postDelayed({
+                SyncTask.sync(activity, false, true)
+            }, 2000)
+
             newState
         })
     }
@@ -83,6 +91,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         MainApplication.bus.register(this)
         if (savedInstanceState != null) {
             val viewType = savedInstanceState.getSerializable(BUNDLE_VIEW_TYPE) as Entry.ViewType?
@@ -178,13 +187,15 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     @Suppress("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun syncStatus(status: SyncTask.SyncStatus) {
-        if (status.isComplete) {
+        if (status.isComplete || TextUtils.isEmpty(status.status)) {
             if (binding?.swipeRefreshLayout?.isRefreshing ?: false) {
                 currentIds.clear()
             }
             binding?.swipeRefreshLayout?.isRefreshing = false
             binding?.toolbar?.menu?.findItem(R.id.menu_refresh)?.isEnabled = true
-            render()
+            if (currentIds.isEmpty()) {
+                render()
+            }
         } else {
             binding?.toolbar?.subtitle = status.status
         }
@@ -205,7 +216,16 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     fun childDisplayedEntryId(entryId: Int) {
         Timber.i("childDiplayedEntryId " + entryId)
         database.entryDao().setUnread(entryId, false)
+        childChangedEntryState()
+    }
+
+    fun childChangedEntryState() {
         binding?.recyclerView?.adapter?.notifyDataSetChanged()
+
+        // push this change soon
+        Handler(Looper.getMainLooper()).postDelayed({
+            SyncTask.sync(activity, false, true)
+        }, 5000)
     }
 
     private fun changeViewType(newViewType: Entry.ViewType) {
@@ -260,12 +280,17 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         // to the visible list, except when we change view types, so that we return to a list
         // from the detail view that looks the same even though the dataset got regenerated.
 
-        val entries = measureTimeMillis("entries") { when (viewType) {
-            Entry.ViewType.UNREAD -> database.entryDao().unreadVisible(filterFeed.toTypedArray())
-            Entry.ViewType.STARRED -> database.entryDao().starredVisible(filterFeed.toTypedArray())
-            Entry.ViewType.ALL -> database.entryDao().allVisible()
-            else -> throw RuntimeException("Can't happen ($viewType)")
-        } }
+        // feedIds needs to be a list of all feed IDs if the filter is empty
+        val feedIds: Array<Int> = if (filterFeed.isEmpty()) database.entryDao().subscriptionFeedIds() else filterFeed.toTypedArray()
+
+        val entries = measureTimeMillis("entries") {
+            when (viewType) {
+                Entry.ViewType.UNREAD -> database.entryDao().unreadVisible(feedIds)
+                Entry.ViewType.STARRED -> database.entryDao().starredVisible(feedIds)
+                Entry.ViewType.ALL -> database.entryDao().allVisible(feedIds)
+                else -> throw RuntimeException("Can't happen ($viewType)")
+            }
+        }
 
         // Now we have a base list. If this is the first time we generated the list
         // (current IDs is empty) then turn the list into a list of current Ids, so that
@@ -273,7 +298,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         // all list and it's super expensive.
         if (currentIds.isEmpty() && viewType != Entry.ViewType.ALL && entries.isNotEmpty()) {
             currentIds.addAll(entries.map { it })
-            return buildEntries()
+            //return buildEntries()
         }
 
         return entries

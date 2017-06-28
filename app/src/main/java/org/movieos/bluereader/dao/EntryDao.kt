@@ -14,14 +14,14 @@ abstract class EntryDao {
     @Query("SELECT createdAt FROM Entry ORDER BY createdAt DESC LIMIT 1")
     abstract fun latestEntryDate(): Date?
 
-    @Query("SELECT id FROM Entry WHERE unread = 1 OR id in (:arg0) ORDER BY published DESC LIMIT 1000")
-    abstract fun unreadVisible(include: Array<Int>): List<Int>
+    @Query("SELECT id FROM Entry WHERE unread = 1 AND feedId in (:arg0) ORDER BY published DESC LIMIT 300")
+    abstract fun unreadVisible(feedIds: Array<Int>): List<Int>
 
-    @Query("SELECT id FROM Entry WHERE starred = 1 OR id in (:arg0) ORDER BY published DESC LIMIT 1000")
-    abstract fun starredVisible(include: Array<Int>): List<Int>
+    @Query("SELECT id FROM Entry WHERE starred = 1 AND feedId in (:arg0) ORDER BY published DESC LIMIT 300")
+    abstract fun starredVisible(feedIds: Array<Int>): List<Int>
 
-    @Query("SELECT id FROM Entry ORDER BY published DESC LIMIT 1000")
-    abstract fun allVisible(): List<Int>
+    @Query("SELECT id FROM Entry WHERE feedId in (:arg0) ORDER BY published DESC LIMIT 300")
+    abstract fun allVisible(feedIds: Array<Int>): List<Int>
 
     @Query("UPDATE Entry SET unread = (id in (:arg0))")
     abstract fun updateUnreadState(unread: Array<Int>)
@@ -33,7 +33,7 @@ abstract class EntryDao {
     abstract fun updateEntries(entries: Array<Entry>)
 
     data class UnreadRow(var feedId: Int = 0, var count: Int = 0)
-    @Query("SELECT feedId, COUNT(*) as count FROM Entry GROUP BY 1")
+    @Query("SELECT feedId, COUNT(*) as count FROM Entry WHERE unread = 1 GROUP BY 1")
     abstract fun countUnread(): List<UnreadRow>
 
     @Query("DELETE FROM Entry")
@@ -60,6 +60,9 @@ abstract class EntryDao {
 
     @Query("SELECT * FROM Subscription ORDER BY id")
     abstract fun subscriptions(): List<Subscription>
+
+    @Query("SELECT feedId FROM Subscription")
+    abstract fun subscriptionFeedIds(): Array<Int>
 
     @Query("SELECT * FROM Subscription WHERE feedId = :arg0")
     abstract fun subscriptionForFeed(id: Int): Subscription?

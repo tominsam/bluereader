@@ -8,8 +8,12 @@ import java.util.*
 
 @Entity(
         indices = arrayOf(
+                Index("feedId", "published"),
+                Index("feedId", "published", "unread"),
+                Index("feedId", "published", "starred"),
+                Index("published"),
                 Index("feedId")
-        )
+            )
 )
 class Entry {
     @PrimaryKey
@@ -58,7 +62,7 @@ class Entry {
         if (subscription == null) {
             return ""
         } else if (author == null) {
-            return subscription.title!!
+            return subscription.title ?: ""
         } else {
             return String.format("%s - %s", subscription.title, author)
         }

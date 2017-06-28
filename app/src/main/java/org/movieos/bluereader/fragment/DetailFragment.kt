@@ -2,6 +2,8 @@ package org.movieos.bluereader.fragment
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.view.ViewPager
@@ -11,6 +13,7 @@ import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.databinding.DetailFragmentBinding
 import org.movieos.bluereader.model.Entry
+import org.movieos.bluereader.utilities.SyncTask
 import org.movieos.bluereader.utilities.Web
 
 private const val INITIAL_INDEX = "initial_index"
@@ -68,6 +71,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
             if (current != null) {
                 database.entryDao().setStarred(current.id, !current.starred)
                 v.isSelected = !current.starred
+                entriesFragment.childChangedEntryState()
             }
         }
         binding.toolbarUnread.setOnClickListener { v ->
@@ -75,6 +79,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
             if (current != null) {
                 database.entryDao().setUnread(current.id, !current.unread)
                 v.isSelected = !current.unread
+                entriesFragment.childChangedEntryState()
             }
         }
         binding.toolbarOpen.setOnClickListener {

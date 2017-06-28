@@ -16,7 +16,7 @@ import java.util.*
                 SyncState::class,
                 LocalState::class
         ),
-        version = 1,
+        version = 4,
         exportSchema = false
 )
 @TypeConverters(Converters::class)

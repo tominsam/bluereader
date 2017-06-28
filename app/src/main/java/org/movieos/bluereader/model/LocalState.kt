@@ -27,4 +27,8 @@ open class LocalState {
         this.markStarred = markStarred
         timeStamp = Date()
     }
+
+    override fun toString(): String {
+        return "<LocalState $entryId $markUnread $markStarred>"
+    }
 }
