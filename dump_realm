@@ -1,1 +1,0 @@
-adb exec-out run-as bluereader cat files/default.realm > default.realm

@@ -8,7 +8,6 @@ import android.support.v7.app.AppCompatDelegate
 import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
-import io.realm.Realm
 import org.movieos.bluereader.fragment.EntriesFragment
 import org.movieos.bluereader.fragment.LoginFragment
 import org.movieos.bluereader.utilities.Settings
@@ -16,9 +15,6 @@ import org.movieos.bluereader.utilities.SyncTask
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedListener {
-
-    // control the lifetime of the realm object
-    internal var realm: Realm? = null
 
     val client: GoogleApiClient by lazy {
         GoogleApiClient.Builder(this)
@@ -51,15 +47,12 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
 
     override fun onStart() {
         super.onStart()
-        realm = Realm.getDefaultInstance()
         SyncTask.sync(this, false, false)
     }
 
     override fun onStop() {
         super.onStop()
         SyncTask.sync(this, false, true)
-        realm?.close()
-        realm = null
     }
 
     override fun onDestroy() {

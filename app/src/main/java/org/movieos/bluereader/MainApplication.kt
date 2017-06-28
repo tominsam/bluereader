@@ -1,13 +1,20 @@
 package org.movieos.bluereader
 
+import android.arch.persistence.room.Room
 import android.webkit.WebView
 import com.facebook.stetho.Stetho
-import io.realm.Realm
-import io.realm.RealmConfiguration
 import org.greenrobot.eventbus.EventBus
+import org.movieos.bluereader.dao.MainDatabase
 import timber.log.Timber
 
+
 class MainApplication : android.app.Application() {
+
+    val database: MainDatabase by lazy {
+        Room.databaseBuilder(applicationContext, MainDatabase::class.java, "bluereader")
+                .allowMainThreadQueries()
+                .build()
+    }
 
     override fun onCreate() {
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
@@ -21,12 +28,6 @@ class MainApplication : android.app.Application() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
-
-        Realm.init(this)
-        Realm.setDefaultConfiguration(RealmConfiguration.Builder()
-                .schemaVersion(6)
-                .deleteRealmIfMigrationNeeded()
-                .build())
     }
 
     companion object {

@@ -7,47 +7,30 @@ import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import io.realm.Realm
-import io.realm.RealmResults
+import org.movieos.bluereader.MainApplication
+import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.databinding.DetailFragmentBinding
 import org.movieos.bluereader.model.Entry
 import org.movieos.bluereader.utilities.Web
-import timber.log.Timber
 
 private const val INITIAL_INDEX = "initial_index"
 
 class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
 
-    val realm: Realm = Realm.getDefaultInstance()
-    // Watches for any changes to any and all entry objects
-    val entryWatcher: RealmResults<Entry> = realm.where(Entry::class.java).findAllAsync()
+    val database: MainDatabase
+        get() = (activity.application as MainApplication).database
 
     val entriesFragment: EntriesFragment
         get() = targetFragment as EntriesFragment
-
-    init {
-        // Every time any entries change, rebuld the displayed list. Not very efficient.
-        entryWatcher.addChangeListener { _: RealmResults<Entry> ->
-            Timber.i("realm changed")
-            updateToolbar()
-            binding?.viewPager?.adapter?.notifyDataSetChanged()
-        }
-    }
 
     fun currentEntry(): Entry? {
         val position = binding?.viewPager?.currentItem ?: -1
         try {
             val entryId = entriesFragment.entriesAdapter.getItemId(position - 1)
-            return realm.where(Entry::class.java).equalTo("id", entryId).findFirst()
-        } catch (_: ArrayIndexOutOfBoundsException) {
+            return database.entryDao().entryById(entryId.toInt())
+        } catch (_: IndexOutOfBoundsException) {
             return null
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        entryWatcher.removeAllChangeListeners()
-        realm.close()
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): DetailFragmentBinding {
@@ -83,14 +66,14 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
         binding.toolbarStarred.setOnClickListener { v ->
             val current = currentEntry()
             if (current != null) {
-                Entry.setStarred(context, realm, current, !current.starred)
+                database.entryDao().setStarred(current.id, !current.starred)
                 v.isSelected = !current.starred
             }
         }
         binding.toolbarUnread.setOnClickListener { v ->
             val current = currentEntry()
             if (current != null) {
-                Entry.setUnread(context, realm, current, !current.unread)
+                database.entryDao().setUnread(current.id, !current.unread)
                 v.isSelected = !current.unread
             }
         }

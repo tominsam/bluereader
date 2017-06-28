@@ -1,7 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.github.triplet.play'
 apply plugin: 'kotlin-android'
-apply plugin: 'realm-android'
 
 buildscript {
     ext.support_version = '26.0.0-beta2'
@@ -74,9 +73,13 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     kapt "com.android.databinding:compiler:$android_plugin_version"
 
-    //compile 'com.airbnb.android:lottie:2.0.0-rc1'
     compile 'com.facebook.stetho:stetho:1.5.0'
     compile 'com.facebook.stetho:stetho-okhttp3:1.5.0'
+
+    compile "android.arch.lifecycle:runtime:1.0.0-alpha3"
+    compile "android.arch.lifecycle:extensions:1.0.0-alpha3"
+    compile "android.arch.persistence.room:runtime:1.0.0-alpha3"
+    kapt "android.arch.persistence.room:compiler:1.0.0-alpha3"
 }
 
 kapt {

@@ -1,0 +1,2 @@
+adb exec-out run-as org.movieos.bluereader cat databases/bluereader > room.sqlite
+

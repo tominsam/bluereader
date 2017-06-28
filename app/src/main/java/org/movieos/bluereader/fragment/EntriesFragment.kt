@@ -1,6 +1,8 @@
 package org.movieos.bluereader.fragment
 
 import android.app.AlertDialog
+import android.arch.lifecycle.LiveData
+import android.arch.lifecycle.Observer
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -9,23 +11,18 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import io.realm.Realm
-import io.realm.RealmResults
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.movieos.bluereader.MainActivity
 import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.R
+import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.databinding.EntriesFragmentBinding
 import org.movieos.bluereader.databinding.FeedRowBinding
 import org.movieos.bluereader.model.Entry
 import org.movieos.bluereader.model.Subscription
 import org.movieos.bluereader.model.SyncState
-import org.movieos.bluereader.model.Tagging
-import org.movieos.bluereader.utilities.BindingAdapter
-import org.movieos.bluereader.utilities.EntriesAdapter
-import org.movieos.bluereader.utilities.Settings
-import org.movieos.bluereader.utilities.SyncTask
+import org.movieos.bluereader.utilities.*
 import timber.log.Timber
 import java.text.DateFormat
 
@@ -39,16 +36,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     // Transient fragment state
 
-    // The realm object
-    val realm: Realm = Realm.getDefaultInstance()
-    // Watches for any changes to any and all entry objects
-    val entryWatcher: RealmResults<Entry> = realm.where(Entry::class.java).findAllAsync()
     // Watches for changes to app sync state
-    val syncState: RealmResults<SyncState> = SyncState.latest(realm).findAllAsync()
+    var syncState: LiveData<SyncState>? = null
+
     // Adapter that shows entries efficiently. Keep this on the fragment so that
     // we can switch view types without scrolling to the top because we created
     // a new adapter
     val entriesAdapter: EntriesAdapter
+
     // Adapter for displaying feeds/tags efficiently.
     val feedsAdapter = BindingAdapter()
 
@@ -65,13 +60,10 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     // Track which feed tags are expanded
     var expandedTaggings: MutableSet<String> = mutableSetOf()
 
-    init {
-        // Every time any entries change, rebuld the displayed list. Not very efficient.
-        entryWatcher.addChangeListener { _: RealmResults<Entry> ->
-            render()
-        }
+    val database: MainDatabase
+        get() = (activity.application as MainApplication).database
 
-        // This adapter accepts a realm resultlist and efficiently renders rows
+    init {
         entriesAdapter = EntriesAdapter({ _, index ->
             val fragment = DetailFragment.create(index)
             fragment.setTargetFragment(this, 0)
@@ -83,7 +75,8 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                     .addToBackStack(null)
                     .commit()
         }, { entry, newState ->
-            Entry.setStarred(context, realm, entry, newState); newState
+            database.entryDao().setStarred(entry.id, newState)
+            newState
         })
     }
 
@@ -99,7 +92,10 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             filterFeed = savedInstanceState.getIntegerArrayList(BUNDLE_FITER_FEED) ?: emptyList()
             expandedTaggings = savedInstanceState.getStringArrayList(BUNDLE_EXPANDED_TAGGINGS).toHashSet()
         }
-        syncState.addChangeListener { state: RealmResults<SyncState> -> if (state.isNotEmpty()) displaySyncTime(state.first()) }
+        syncState = database.entryDao().watchSyncState()
+        syncState?.observe(this, Observer { state ->
+            displaySyncTime(state)
+        })
 
     }
 
@@ -132,7 +128,11 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 }
                 R.id.menu_logout -> {
                     Settings.saveCredentials(activity, null)
-                    realm.executeTransaction { it.deleteAll() }
+                    database.entryDao().wipeSubscriptions()
+                    database.entryDao().wipeEntries()
+                    database.entryDao().wipeTaggings()
+                    database.entryDao().wipeLocalState()
+                    database.entryDao().wipeSyncState()
                     startActivity(Intent(activity, MainActivity::class.java))
                 }
             }
@@ -149,7 +149,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         binding.navigationUnread.setOnClickListener { changeViewType(Entry.ViewType.UNREAD) }
         binding.navigationStarred.setOnClickListener { changeViewType(Entry.ViewType.STARRED) }
 
-        if (SyncState.latest(realm).findFirst() == null) {
+        if (syncState?.value == null) {
             // first run / first sync
             SyncTask.sync(activity, true, false)
         }
@@ -164,9 +164,6 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     override fun onDestroy() {
         super.onDestroy()
-        entryWatcher.removeAllChangeListeners()
-        syncState.removeAllChangeListeners()
-        realm.close()
         MainApplication.bus.unregister(this)
     }
 
@@ -207,10 +204,8 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     fun childDisplayedEntryId(entryId: Int) {
         Timber.i("childDiplayedEntryId " + entryId)
-        val entry = Entry.byId(realm, entryId).findFirst()
-        if (entry != null && entry.unread && context != null) {
-            Entry.setUnread(context, realm, entry, false)
-        }
+        database.entryDao().setUnread(entryId, false)
+        binding?.recyclerView?.adapter?.notifyDataSetChanged()
     }
 
     private fun changeViewType(newViewType: Entry.ViewType) {
@@ -245,7 +240,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                 binding?.recyclerView?.adapter = feedsAdapter
             }
         } else {
-            entriesAdapter.entries = buildEntries()
+            entriesAdapter.rows = buildEntries()
             if (binding?.recyclerView?.adapter != entriesAdapter) {
                 binding?.recyclerView?.adapter = entriesAdapter
             }
@@ -257,45 +252,31 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             binding?.empty?.visibility = View.GONE
         }
 
-        displaySyncTime(SyncState.latest(realm).findFirst())
+        displaySyncTime(syncState?.value)
     }
 
-    private fun buildEntries(): RealmResults<Entry>? {
+    private fun buildEntries(): List<Int> {
         // currentIds is a list of things we're _currently_ showing. We only ever add items
         // to the visible list, except when we change view types, so that we return to a list
         // from the detail view that looks the same even though the dataset got regenerated.
 
-        // All entries
-        val entries = realm.where(Entry::class.java)
-
-        // ..filter by view type
-        @Suppress("NON_EXHAUSTIVE_WHEN")
-        when (viewType) {
-            Entry.ViewType.UNREAD -> entries.equalTo("unread", true)
-            Entry.ViewType.STARRED -> entries.equalTo("starred", true)
-        }
-
-        // ..and also filter by feed
-        if (filterFeed.isNotEmpty()) {
-            entries.`in`("feedId", filterFeed.toTypedArray())
-        }
+        val entries = measureTimeMillis("entries") { when (viewType) {
+            Entry.ViewType.UNREAD -> database.entryDao().unreadVisible(filterFeed.toTypedArray())
+            Entry.ViewType.STARRED -> database.entryDao().starredVisible(filterFeed.toTypedArray())
+            Entry.ViewType.ALL -> database.entryDao().allVisible()
+            else -> throw RuntimeException("Can't happen ($viewType)")
+        } }
 
         // Now we have a base list. If this is the first time we generated the list
         // (current IDs is empty) then turn the list into a list of current Ids, so that
         // we never remove things from the list. There's no point in doing this for the
         // all list and it's super expensive.
-        if (currentIds.isEmpty() && viewType != Entry.ViewType.ALL) {
-            currentIds.addAll(entries.findAll().map { it.id })
+        if (currentIds.isEmpty() && viewType != Entry.ViewType.ALL && entries.isNotEmpty()) {
+            currentIds.addAll(entries.map { it })
+            return buildEntries()
         }
 
-        // Now currentIds is populated, the list is anything we have filtered so far,
-        // _OR_ anything in currentids.
-        if (currentIds.isNotEmpty()) {
-            entries.or().`in`("id", currentIds.toTypedArray())
-        }
-
-        val visibleEntries = entries.findAllSorted("published", io.realm.Sort.DESCENDING)
-        return visibleEntries
+        return entries
     }
 
     data class FeedRow(
@@ -307,15 +288,15 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     private fun buildFeeds(builder: BindingAdapter.Builder) {
-        val allSubscriptions = realm.where(Subscription::class.java).findAll()
+        val allSubscriptions = database.entryDao().subscriptions()
         val untagged = allSubscriptions.toMutableList()
 
         // Group subs into tags
         val taggedSubscriptions: MutableMap<String, FeedRow> = mutableMapOf()
-        for (tagging in realm.where(Tagging::class.java).findAll()) {
+        for (tagging in database.entryDao().taggings()) {
             val name = tagging.name ?: continue
             val subscription = tagging.subscription ?: continue
-            untagged.remove(tagging.subscription)
+            untagged.remove(subscription)
 
             if (taggedSubscriptions[name] == null) {
                 taggedSubscriptions[name] = FeedRow(name, selected = filterName == name, subscriptions = mutableListOf())
