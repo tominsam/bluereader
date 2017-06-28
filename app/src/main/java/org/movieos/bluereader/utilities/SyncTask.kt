@@ -45,14 +45,12 @@ class SyncTask private constructor(
 
         } catch (e: Throwable) {
             Timber.e(e)
-            Thread.sleep(500);
             if (pushOnly) {
                 return SyncStatus(true, "Failed")
             } else {
                 return SyncStatus(e)
             }
         }
-        Thread.sleep(500);
         return SyncStatus(true, "Done")
     }
 
