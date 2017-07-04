@@ -188,7 +188,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             }
             binding?.swipeRefreshLayout?.isRefreshing = false
             binding?.toolbar?.menu?.findItem(R.id.menu_refresh)?.isEnabled = true
-            if (currentIds.isEmpty()) {
+            if (currentIds.isEmpty() || isResumed) {
                 render()
             }
             displaySyncTime(database.entryDao().syncState())
