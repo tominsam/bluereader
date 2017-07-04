@@ -152,11 +152,6 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         binding.navigationUnread.setOnClickListener { changeViewType(Entry.ViewType.UNREAD) }
         binding.navigationStarred.setOnClickListener { changeViewType(Entry.ViewType.STARRED) }
 
-        if (syncState?.value == null) {
-            // first run / first sync
-            SyncTask.sync(activity, true, false)
-        }
-
         return binding
     }
 
@@ -189,6 +184,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             binding?.swipeRefreshLayout?.isRefreshing = false
             binding?.toolbar?.menu?.findItem(R.id.menu_refresh)?.isEnabled = true
             if (currentIds.isEmpty() || isResumed) {
+                // TODO isResumed isn;t what I want, I suspect
                 render()
             }
             displaySyncTime(database.entryDao().syncState())
