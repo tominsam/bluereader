@@ -11,3 +11,4 @@ default.realm*
 release.keystore
 release.properties
 /*~
+/room.sqlite
