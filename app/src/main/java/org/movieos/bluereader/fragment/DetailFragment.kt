@@ -4,10 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentStatePagerAdapter
+import android.support.v4.view.PagerAdapter
 import android.support.v4.view.ViewPager
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import org.movieos.bluereader.MainApplication
+import org.movieos.bluereader.api.Mercury
 import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.databinding.DetailFragmentBinding
 import org.movieos.bluereader.model.Entry
@@ -55,6 +57,10 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
                 val itemId = entryIds[position]
                 return DetailPageFragment.create(itemId)
             }
+
+            override fun getItemPosition(`object`: Any?): Int {
+                return PagerAdapter.POSITION_NONE
+            }
         }
 
         binding.viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
@@ -64,6 +70,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
                 if (isResumed)
                     updateToolbar()
             }
+
             override fun onPageScrollStateChanged(state: Int) {}
         })
 
@@ -98,6 +105,20 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
                 startActivity(chooser)
             }
         }
+        binding.toolbarMercury.setOnClickListener {
+            val entry = currentEntry()
+            if (Mercury(context).contentFor(entry) != null) {
+                Mercury(context).clearContent(entry)
+                binding.viewPager.adapter?.notifyDataSetChanged()
+                updateToolbar()
+
+            } else {
+                Mercury(context).parser(entry) {
+                    binding.viewPager.adapter?.notifyDataSetChanged()
+                    updateToolbar()
+                }
+            }
+        }
         binding.background.setOnClickListener {
             activity.onBackPressed()
         }
@@ -114,6 +135,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
             // need to fire selectedPage to render the menu properly
             updateToolbar()
         }
+        entriesFragment.childDisplayedEntryId(currentEntryId())
     }
 
     private fun updateToolbar() {

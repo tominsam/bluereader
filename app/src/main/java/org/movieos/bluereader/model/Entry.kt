@@ -3,7 +3,9 @@ package org.movieos.bluereader.model
 import android.arch.persistence.room.Entity
 import android.arch.persistence.room.Index
 import android.arch.persistence.room.PrimaryKey
+import android.content.Context
 import com.google.gson.annotations.SerializedName
+import org.movieos.bluereader.api.Mercury
 import java.util.*
 
 @Entity(
@@ -78,6 +80,10 @@ class Entry {
 
     override fun hashCode(): Int {
         return id.hashCode()
+    }
+
+    fun hasMercuryContent(context: Context): Boolean {
+        return Mercury(context).contentFor(this) != null
     }
 
 }

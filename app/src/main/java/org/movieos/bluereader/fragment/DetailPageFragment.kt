@@ -16,6 +16,7 @@ import android.webkit.*
 import android.webkit.WebView.HitTestResult
 import org.movieos.bluereader.MainApplication
 import org.movieos.bluereader.R
+import org.movieos.bluereader.api.Mercury
 import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.databinding.DetailPageFragmentBinding
 import org.movieos.bluereader.model.Entry
@@ -61,8 +62,9 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
             binding.webView.visibility = View.GONE
             binding.fake.visibility = View.GONE
         } else {
+            val content = Mercury(context).contentFor(entry) ?: entry.content
             binding.webView.loadDataWithBaseURL(entry.url, template
-                    .replace("{{body}}", safeContent(entry.content) ?: "")
+                    .replace("{{body}}", safeContent(content) ?: "")
                     .replace("{{title}}", Html.escapeHtml(entry.title ?: ""))
                     .replace("{{link}}", Html.escapeHtml(entry.url ?: ""))
                     .replace("{{author}}", Html.escapeHtml(entry.displayAuthor(subscription)))

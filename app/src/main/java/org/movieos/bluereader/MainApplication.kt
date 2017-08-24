@@ -15,6 +15,7 @@ class MainApplication : android.app.Application() {
     val database: MainDatabase by lazy {
         Room.databaseBuilder(applicationContext, MainDatabase::class.java, "bluereader")
                 .allowMainThreadQueries()
+                .fallbackToDestructiveMigration()
                 .build()
     }
 

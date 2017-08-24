@@ -163,7 +163,7 @@ class Feedbin(context: Context) {
 
     companion object {
 
-        private val CACHE_SIZE_BYTES = 1024 * 1024 * 2
+        val CACHE_SIZE_BYTES = 1024 * 1024 * 2
         private val UTC_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
         fun authenticate(context: Context, credentials: String, callback: Callback<Void>) {
@@ -215,7 +215,7 @@ class Feedbin(context: Context) {
             return sRetrofit.create(RawApi::class.java)
         }
 
-        private fun dangerousSocketFactory(): Pair<SSLSocketFactory, X509TrustManager>? {
+        fun dangerousSocketFactory(): Pair<SSLSocketFactory, X509TrustManager>? {
             if (!BuildConfig.DEBUG) {
                 return null
             }

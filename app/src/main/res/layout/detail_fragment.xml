@@ -10,6 +10,8 @@
             name="entry"
             type="org.movieos.bluereader.model.Entry"
             />
+
+        <import type="org.movieos.bluereader.api.Mercury"/>
     </data>
 
     <FrameLayout
@@ -39,9 +41,9 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="4dp"
-            android:background="@drawable/bottom_shadow"
-            android:layout_marginBottom="?actionBarSize"
             android:layout_gravity="bottom"
+            android:layout_marginBottom="?actionBarSize"
+            android:background="@drawable/bottom_shadow"
             />
 
         <LinearLayout
@@ -76,6 +78,16 @@
                 android:contentDescription="@string/action_share"
                 android:src="@drawable/ic_share_24dp"
                 android:tint="?colorControlNormal"
+                />
+
+            <ImageButton
+                android:id="@+id/toolbar_mercury"
+                style="@style/ToolbarButton"
+                android:layout_marginEnd="4dp"
+                android:contentDescription="@string/action_mercury"
+                android:src="@drawable/statelist_mercury"
+                android:tint="@color/statelist_mercury"
+                app:selected="@{entry.hasMercuryContent(context)}"
                 />
 
             <ImageButton

@@ -15,6 +15,7 @@
     <string name="action_back">Back</string>
     <string name="action_share">Share</string>
     <string name="action_open">Open in browser</string>
+    <string name="action_mercury">Extract page content</string>
     <string name="action_star">Star entry</string>
 
     <string name="is_starred">Entry is starred</string>
