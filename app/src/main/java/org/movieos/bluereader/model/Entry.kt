@@ -61,12 +61,13 @@ class Entry {
     }
 
     fun displayAuthor(subscription: Subscription?): String {
-        if (subscription == null) {
-            return ""
-        } else if (author == null) {
-            return subscription.title ?: ""
-        } else {
-            return String.format("%s - %s", subscription.title, author)
+        return when {
+            subscription == null ->
+                ""
+            author == null ->
+                subscription.title ?: ""
+            else ->
+                String.format("%s - %s", subscription.title, author)
         }
     }
 

@@ -1,7 +1,6 @@
 package org.movieos.bluereader.api
 
 import android.content.Context
-import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.google.gson.GsonBuilder
 import com.google.gson.annotations.SerializedName
 import okhttp3.Cache
@@ -40,7 +39,7 @@ class Mercury(context: Context) {
         api.parser(url).enqueue(object: Callback<MercuryResponse?> {
             override fun onResponse(call: Call<MercuryResponse?>?, response: Response<MercuryResponse?>?) {
                 content[entry.id] = response?.body()?.content
-                Timber.i("content received: ${content[entry.id]} for ${entry}")
+                Timber.i("content received: ${content[entry.id]} for $entry")
                 done()
             }
 
@@ -58,7 +57,6 @@ class Mercury(context: Context) {
 
         var builder = OkHttpClient.Builder()
                 .cache(Cache(context.cacheDir, Feedbin.CACHE_SIZE_BYTES.toLong()))
-                .addNetworkInterceptor(StethoInterceptor())
                 .addInterceptor { chain ->
                     val request = chain.request().newBuilder()
                     request.addHeader(HEADER, TOKEN)

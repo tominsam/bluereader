@@ -2,7 +2,6 @@ package org.movieos.bluereader.api
 
 import android.content.Context
 import android.text.TextUtils
-import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.google.gson.*
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -190,7 +189,6 @@ class Feedbin(context: Context) {
 
             var builder = OkHttpClient.Builder()
                     .cache(Cache(context.cacheDir, CACHE_SIZE_BYTES.toLong()))
-                    .addNetworkInterceptor(StethoInterceptor())
                     .addInterceptor { chain ->
                         val request = chain.request().newBuilder()
                         if (credentials != null) {

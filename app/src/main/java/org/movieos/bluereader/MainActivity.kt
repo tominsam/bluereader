@@ -5,9 +5,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.app.AppCompatDelegate
+import com.crashlytics.android.Crashlytics
 import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
+import io.fabric.sdk.android.Fabric
 import org.movieos.bluereader.fragment.EntriesFragment
 import org.movieos.bluereader.fragment.LoginFragment
 import org.movieos.bluereader.utilities.Settings
@@ -34,6 +36,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
         setTheme(R.style.AppTheme)
 
         super.onCreate(savedInstanceState)
+
+        Fabric.with(this, Crashlytics())
+
         setContentView(R.layout.activity_main)
         if (savedInstanceState == null) {
             supportFragmentManager

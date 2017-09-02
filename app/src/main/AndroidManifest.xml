@@ -15,6 +15,12 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.Splash"
         >
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="c378fcb8538c8a0bb9aa7b1fc355017166ebb726"
+            />
+
         <activity android:name="org.movieos.bluereader.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

@@ -1,16 +1,11 @@
 apply plugin: 'com.android.application'
-apply plugin: 'com.github.triplet.play'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'io.fabric'
 
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.0"
-
-    playAccountConfigs {
-        defaultAccountConfig {
-            jsonFile = file('../play_store_keys.json')
-        }
-    }
 
     defaultConfig {
         applicationId "org.movieos.bluereader"
@@ -19,7 +14,6 @@ android {
         versionCode 8
         versionName "0.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        playAccountConfig = playAccountConfigs.defaultAccountConfig
     }
 
     dataBinding {
@@ -38,10 +32,6 @@ android {
         }
     }
 
-    play {
-        track = 'beta'
-    }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -53,9 +43,7 @@ dependencies {
     compile "com.android.support:appcompat-v7:$support_version"
     compile "com.android.support:design:$support_version"
     compile "com.android.support:customtabs:$support_version"
-
     compile "com.google.android.gms:play-services-auth:$play_services_version"
-    compile "com.google.firebase:firebase-crash:$play_services_version"
 
     // Kotlin dependencies
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
@@ -66,6 +54,9 @@ dependencies {
     compile "android.arch.lifecycle:extensions:$arch_version"
     compile "android.arch.persistence.room:runtime:$arch_version"
     kapt "android.arch.persistence.room:compiler:$arch_version"
+
+    // https://fabric.io/kits/android/crashlytics/install
+    compile('com.crashlytics.sdk.android:crashlytics:2.6.8@aar') { transitive = true }
 
     // http://square.github.io/retrofit/
     compile 'com.squareup.retrofit2:retrofit:2.2.0'
@@ -80,11 +71,6 @@ dependencies {
 
     // https://github.com/greenrobot/EventBus
     compile 'org.greenrobot:eventbus:3.0.0'
-
-
-    compile 'com.facebook.stetho:stetho:1.5.0'
-    compile 'com.facebook.stetho:stetho-okhttp3:1.5.0'
-
 }
 
 kapt {
@@ -100,6 +86,3 @@ android.signingConfigs.release.keyAlias = props.keyAlias
 android.signingConfigs.release.storeFile = file(props.keyStore)
 android.signingConfigs.release.storePassword = props.keyStorePassword
 android.signingConfigs.release.keyPassword = props.keyAliasPassword
-
-
-apply plugin: 'com.google.gms.google-services'

@@ -3,8 +3,7 @@ package org.movieos.bluereader
 import android.arch.persistence.room.Room
 import android.util.Log
 import android.webkit.WebView
-import com.facebook.stetho.Stetho
-import com.google.firebase.crash.FirebaseCrash
+import com.crashlytics.android.Crashlytics
 import org.greenrobot.eventbus.EventBus
 import org.movieos.bluereader.dao.MainDatabase
 import timber.log.Timber
@@ -25,10 +24,6 @@ class MainApplication : android.app.Application() {
         super.onCreate()
 
         if (BuildConfig.DEBUG) {
-            Stetho.initializeWithDefaults(this);
-        }
-
-        if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
 
         } else {
@@ -38,10 +33,10 @@ class MainApplication : android.app.Application() {
                         return
                     }
                     if (message != null) {
-                        FirebaseCrash.log("$tag - $message")
+                        Crashlytics.log("$tag - $message")
                     }
                     if (throwable != null) {
-                        FirebaseCrash.report(throwable)
+                        Crashlytics.logException(throwable)
                     }
                 }
             })
