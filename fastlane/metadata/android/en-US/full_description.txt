@@ -1,0 +1,3 @@
+An RSS reader for Feedbin
+
+There are many of these, but (a) I didn't like any of them, and (b) it seemed like a good idea at the time.

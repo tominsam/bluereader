@@ -12,3 +12,4 @@ release.keystore
 release.properties
 /*~
 /room.sqlite
+/fastlane/report.xml

@@ -1,0 +1,4 @@
+Quite a lot of things.
+* re-wrote DB layer
+* re-wrote sync layer
+* fixed lots of weird UI sync bugs when reading while a sync was happening

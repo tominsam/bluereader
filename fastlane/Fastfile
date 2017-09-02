@@ -1,0 +1,32 @@
+update_fastlane
+fastlane_version "2.55.0"
+default_platform :android
+
+platform :android do
+
+    before_all do
+    end
+
+    lane :test do
+        gradle(task: "test")
+    end
+
+    lane :beta do
+        gradle(task: "assembleRelease")
+        supply(
+            track: "alpha",
+            apk: "app/build/outputs/apk/release/app-release.apk"
+        )
+        increment_version_code
+    end
+
+    lane :deploy do
+        gradle(task: "assembleRelease")
+        supply(
+            track: "production",
+            apk: "app/build/outputs/apk/release/app-release.apk"
+        )
+        increment_version_code
+    end
+
+end

@@ -1,0 +1,4 @@
+package_name "org.movieos.bluereader"
+
+# Path to the json secret file - Follow https://github.com/fastlane/supply#setup to get one
+json_key_file "play_store_keys.json"
