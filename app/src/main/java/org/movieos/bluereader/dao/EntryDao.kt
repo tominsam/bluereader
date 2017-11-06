@@ -53,14 +53,14 @@ abstract class EntryDao {
 
     fun setUnread(id: Int, unread: Boolean) {
         if (entryById(id)?.unread != unread) {
-            createLocalState(LocalState(id, unread, null))
+            createLocalState(LocalState(null, id, Date(), unread, null))
             setUnreadInternal(id, unread)
         }
     }
 
     fun setStarred(id: Int, starred: Boolean) {
         if (entryById(id)?.starred != starred) {
-            createLocalState(LocalState(id, null, starred))
+            createLocalState(LocalState(null, id, Date(), null, starred))
             setStarredInternal(id, starred)
         }
     }

@@ -20,7 +20,6 @@ import org.movieos.bluereader.R
 import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.databinding.EntriesFragmentBinding
 import org.movieos.bluereader.databinding.FeedRowBinding
-import org.movieos.bluereader.model.Entry
 import org.movieos.bluereader.model.Subscription
 import org.movieos.bluereader.model.SyncState
 import org.movieos.bluereader.utilities.*
@@ -32,6 +31,13 @@ private const val BUNDLE_VIEW_TYPE = "view_type"
 private const val BUNDLE_FITER_NAME = "filter_name"
 private const val BUNDLE_FITER_FEED = "filter_feed"
 private const val BUNDLE_EXPANDED_TAGGINGS = "expanded_taggings"
+
+enum class ViewType {
+    FEEDS,
+    UNREAD,
+    STARRED,
+    ALL
+}
 
 class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
@@ -57,7 +63,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     // List of feed IDs we're filtering to, empty for "show all"
     var filterFeed: Collection<Int> = emptyList()
     // current selected view type
-    var viewType = Entry.ViewType.UNREAD
+    var viewType = ViewType.UNREAD
     // Track which feed tags are expanded
     var expandedTaggings: MutableSet<String> = mutableSetOf()
 
@@ -88,7 +94,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
         MainApplication.bus.register(this)
         if (savedInstanceState != null) {
-            val viewType = savedInstanceState.getSerializable(BUNDLE_VIEW_TYPE) as Entry.ViewType?
+            val viewType = savedInstanceState.getSerializable(BUNDLE_VIEW_TYPE) as ViewType?
             this.viewType = viewType ?: this.viewType
             currentIds.addAll(savedInstanceState.getIntegerArrayList(BUNDLE_CURRENT_IDS))
             filterName = savedInstanceState.getString(BUNDLE_FITER_NAME)
@@ -147,10 +153,10 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             SyncTask.sync(activity, true, false)
         }
 
-        binding.navigationFeeds.setOnClickListener { changeViewType(Entry.ViewType.FEEDS) }
-        binding.navigationAll.setOnClickListener { changeViewType(Entry.ViewType.ALL) }
-        binding.navigationUnread.setOnClickListener { changeViewType(Entry.ViewType.UNREAD) }
-        binding.navigationStarred.setOnClickListener { changeViewType(Entry.ViewType.STARRED) }
+        binding.navigationFeeds.setOnClickListener { changeViewType(ViewType.FEEDS) }
+        binding.navigationAll.setOnClickListener { changeViewType(ViewType.ALL) }
+        binding.navigationUnread.setOnClickListener { changeViewType(ViewType.UNREAD) }
+        binding.navigationStarred.setOnClickListener { changeViewType(ViewType.STARRED) }
 
         return binding
     }
@@ -166,8 +172,8 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     }
 
     fun onBackPressed(): Boolean {
-        if (viewType != Entry.ViewType.FEEDS && !filterFeed.isEmpty()) {
-            changeViewType(Entry.ViewType.FEEDS)
+        if (viewType != ViewType.FEEDS && !filterFeed.isEmpty()) {
+            changeViewType(ViewType.FEEDS)
             return true
         }
         return false
@@ -216,7 +222,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         SyncTask.pushSoon(activity)
     }
 
-    private fun changeViewType(newViewType: Entry.ViewType) {
+    private fun changeViewType(newViewType: ViewType) {
         viewType = newViewType
         currentIds.clear()
         render()
@@ -235,12 +241,12 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         Timber.i("Render")
         binding?.toolbar?.title = filterName ?: getString(R.string.all_entries)
 
-        binding?.navigationUnread?.isSelected = viewType == Entry.ViewType.UNREAD
-        binding?.navigationStarred?.isSelected = viewType == Entry.ViewType.STARRED
-        binding?.navigationAll?.isSelected = viewType == Entry.ViewType.ALL
-        binding?.navigationFeeds?.isSelected = viewType == Entry.ViewType.FEEDS
+        binding?.navigationUnread?.isSelected = viewType == ViewType.UNREAD
+        binding?.navigationStarred?.isSelected = viewType == ViewType.STARRED
+        binding?.navigationAll?.isSelected = viewType == ViewType.ALL
+        binding?.navigationFeeds?.isSelected = viewType == ViewType.FEEDS
 
-        if (viewType == Entry.ViewType.FEEDS) {
+        if (viewType == ViewType.FEEDS) {
             val builder = BindingAdapter.Builder()
             buildFeeds(builder)
             feedsAdapter.fromBuilder(builder)
@@ -273,9 +279,9 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
         val entries = measureTimeMillis("entries") {
             when (viewType) {
-                Entry.ViewType.UNREAD -> database.entryDao().unreadVisible(feedIds)
-                Entry.ViewType.STARRED -> database.entryDao().starredVisible(feedIds)
-                Entry.ViewType.ALL -> database.entryDao().allVisible(feedIds)
+                ViewType.UNREAD -> database.entryDao().unreadVisible(feedIds)
+                ViewType.STARRED -> database.entryDao().starredVisible(feedIds)
+                ViewType.ALL -> database.entryDao().allVisible(feedIds)
                 else -> throw RuntimeException("Can't happen ($viewType)")
             }
         }
@@ -284,7 +290,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
         // (current IDs is empty) then turn the list into a list of current Ids, so that
         // we never remove things from the list. There's no point in doing this for the
         // all list and it's super expensive.
-        if (currentIds.isEmpty() && viewType != Entry.ViewType.ALL && entries.isNotEmpty()) {
+        if (currentIds.isEmpty() && viewType != ViewType.ALL && entries.isNotEmpty()) {
             currentIds.addAll(entries.map { it })
             //return buildEntries()
         }
@@ -339,7 +345,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             view.setOnClickListener {
                 filterName = feedRow.name
                 filterFeed = if (feedRow.name == null) emptyList() else feedRow.subscriptions.map { it.feedId }
-                changeViewType(Entry.ViewType.UNREAD)
+                changeViewType(ViewType.UNREAD)
             }
             rowBinding.expand.setOnClickListener {
                 if (expanded) {
@@ -359,7 +365,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
                     view.setOnClickListener {
                         filterName = subscription.title
                         filterFeed = listOf(subscription.feedId)
-                        changeViewType(Entry.ViewType.UNREAD)
+                        changeViewType(ViewType.UNREAD)
                     }
                 }
             }

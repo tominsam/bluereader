@@ -15,50 +15,44 @@ import java.util.*
                 Index("feedId", "published", "starred"),
                 Index("published"),
                 Index("feedId")
-            )
+        )
 )
-class Entry {
-    @PrimaryKey
-    @SerializedName("id")
-    var id: Int = 0
+data class Entry(
+        @PrimaryKey
+        @SerializedName("id")
+        val id: Int,
 
-    @SerializedName("feed_id")
-    var feedId: Int = 0
+        @SerializedName("feed_id")
+        val feedId: Int,
 
-    @SerializedName("title")
-    var title: String? = null
+        @SerializedName("title")
+        val title: String?,
 
-    @SerializedName("url")
-    var url: String? = null
+        @SerializedName("url")
+        val url: String?,
 
-    @SerializedName("author")
-    var author: String? = null
+        @SerializedName("author")
+        val author: String?,
 
-    @SerializedName("content")
-    var content: String? = null
+        @SerializedName("content")
+        val content: String?,
 
-    @SerializedName("summary")
-    var summary: String? = null
+        @SerializedName("summary")
+        val summary: String?,
+
+        @SerializedName("created_at")
+        val createdAt: Date?,
+
+        @SerializedName("published")
+        val published: Date?,
+
+        // these properties are denormalized locally and stored to make the UI state easier to handle
+        var unread: Boolean,
+        var starred: Boolean
+) {
 
     val excerpt: String
-        get() = summary?.substring(0, Math.min(summary?.length ?: 0, 200)) ?: ""
-
-    @SerializedName("created_at")
-    var createdAt: Date? = null
-
-    @SerializedName("published")
-    var published: Date? = null
-
-    var unread: Boolean = false
-
-    var starred: Boolean = false
-
-    enum class ViewType {
-        FEEDS,
-        UNREAD,
-        STARRED,
-        ALL
-    }
+        get() = summary?.substring(0, Math.min(summary.length, 200)) ?: ""
 
     fun displayAuthor(subscription: Subscription?): String {
         return when {
@@ -69,18 +63,6 @@ class Entry {
             else ->
                 String.format("%s - %s", subscription.title, author)
         }
-    }
-
-    override fun toString(): String {
-        return String.format(Locale.US, "<Entry %d %s>", id, title)
-    }
-
-    override fun equals(other: Any?): Boolean {
-        return other is Entry && id == other.id
-    }
-
-    override fun hashCode(): Int {
-        return id.hashCode()
     }
 
     fun hasMercuryContent(context: Context): Boolean {
