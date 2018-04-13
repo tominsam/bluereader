@@ -57,7 +57,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     // Persisted view states:
 
     // A list of entry IDs we're looking at, so we don't ever remove things
-    val currentIds: MutableSet<Int> = mutableSetOf()
+    val currentIds = mutableSetOf<Int>()
     // Display name for the current feed filter
     var filterName: String? = null
     // List of feed IDs we're filtering to, empty for "show all"
@@ -65,10 +65,10 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
     // current selected view type
     var viewType = ViewType.UNREAD
     // Track which feed tags are expanded
-    var expandedTaggings: MutableSet<String> = mutableSetOf()
+    var expandedTaggings = mutableSetOf<String>()
 
     val database: MainDatabase
-        get() = (activity.application as MainApplication).database
+        get() = (activity!!.application as MainApplication).database
 
     init {
         entriesAdapter = EntriesAdapter({ entryIds, index ->
@@ -76,14 +76,14 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             fragment.setTargetFragment(this, 0)
             fragment.enterTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)
             fragment.returnTransition = TransitionInflater.from(context).inflateTransition(R.transition.detail_enter)
-            fragmentManager
+            fragmentManager!!
                     .beginTransaction()
                     .add(R.id.main_content, fragment)
                     .addToBackStack(null)
                     .commit()
         }, { entry, newState ->
             database.entryDao().setStarred(entry.id, newState)
-            SyncTask.pushSoon(activity)
+            SyncTask.pushSoon(activity!!)
             newState
         })
     }
@@ -127,16 +127,16 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
             when (item.itemId) {
                 R.id.menu_refresh -> {
                     item.isEnabled = false
-                    SyncTask.sync(activity, true, false)
+                    SyncTask.sync(activity!!, true, false)
                 }
                 R.id.menu_theme -> {
-                    activity.getSharedPreferences("settings", Context.MODE_PRIVATE).edit()
+                    activity!!.getSharedPreferences("settings", Context.MODE_PRIVATE).edit()
                             .putBoolean("night_mode", !(activity as MainActivity).wantNightMode())
                             .apply()
-                    activity.recreate()
+                    activity!!.recreate()
                 }
                 R.id.menu_logout -> {
-                    Settings.saveCredentials(activity, null)
+                    Settings.saveCredentials(activity!!, null)
                     database.entryDao().wipeSubscriptions()
                     database.entryDao().wipeEntries()
                     database.entryDao().wipeTaggings()
@@ -150,7 +150,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
         binding.swipeRefreshLayout.setOnRefreshListener {
             binding.toolbar.menu?.findItem(R.id.menu_refresh)?.isEnabled = false
-            SyncTask.sync(activity, true, false)
+            SyncTask.sync(activity!!, true, false)
         }
 
         binding.navigationFeeds.setOnClickListener { changeViewType(ViewType.FEEDS) }
@@ -219,7 +219,7 @@ class EntriesFragment : DataBindingFragment<EntriesFragmentBinding>() {
 
     fun childChangedEntryState() {
         binding?.recyclerView?.adapter?.notifyDataSetChanged()
-        SyncTask.pushSoon(activity)
+        SyncTask.pushSoon(activity!!)
     }
 
     private fun changeViewType(newViewType: ViewType) {

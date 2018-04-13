@@ -23,7 +23,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
     var entryIds: List<Int> = emptyList()
 
     val database: MainDatabase
-        get() = (activity.application as MainApplication).database
+        get() = (activity!!.application as MainApplication).database
 
     val entriesFragment: EntriesFragment
         get() = targetFragment as EntriesFragment
@@ -40,13 +40,13 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // different negative IDs because they're also the adapter item Ids.
-        entryIds = arrayListOf(-1) + arguments.getIntegerArrayList(INITIAL_ENTRYIDS) + arrayListOf(-2)
+        entryIds = arrayListOf(-1) + (arguments?.getIntegerArrayList(INITIAL_ENTRYIDS) ?: emptyList<Int>()) + arrayListOf(-2)
     }
 
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): DetailFragmentBinding {
         val binding = DetailFragmentBinding.inflate(inflater, container, false)
 
-        binding.toolbarBack.setOnClickListener { activity.onBackPressed() }
+        binding.toolbarBack.setOnClickListener { activity?.onBackPressed() }
 
         binding.viewPager.adapter = object : FragmentStatePagerAdapter(childFragmentManager) {
             override fun getCount(): Int {
@@ -58,7 +58,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
                 return DetailPageFragment.create(itemId)
             }
 
-            override fun getItemPosition(`object`: Any?): Int {
+            override fun getItemPosition(item: Any): Int {
                 return PagerAdapter.POSITION_NONE
             }
         }
@@ -93,7 +93,7 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
         binding.toolbarOpen.setOnClickListener {
             val current = currentEntry()
             if (current != null)
-                Web.openInBrowser(activity, current.url)
+                Web.openInBrowser(activity!!, current.url)
         }
         binding.toolbarShare.setOnClickListener {
             val entry = currentEntry()
@@ -107,20 +107,20 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
         }
         binding.toolbarMercury.setOnClickListener {
             val entry = currentEntry()
-            if (Mercury(context).contentFor(entry) != null) {
-                Mercury(context).clearContent(entry)
+            if (Mercury(context!!).contentFor(entry) != null) {
+                Mercury(context!!).clearContent(entry)
                 binding.viewPager.adapter?.notifyDataSetChanged()
                 updateToolbar()
 
             } else {
-                Mercury(context).parser(entry) {
+                Mercury(context!!).parser(entry) {
                     binding.viewPager.adapter?.notifyDataSetChanged()
                     updateToolbar()
                 }
             }
         }
         binding.background.setOnClickListener {
-            activity.onBackPressed()
+            activity?.onBackPressed()
         }
 
         return binding
@@ -128,9 +128,9 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
 
     override fun onResume() {
         super.onResume()
-        if (arguments.containsKey(INITIAL_INDEX)) {
-            binding?.viewPager?.setCurrentItem(arguments.getInt(INITIAL_INDEX) + 1, false)
-            arguments.remove(INITIAL_INDEX)
+        if (arguments?.containsKey(INITIAL_INDEX) == true) {
+            binding?.viewPager?.setCurrentItem(arguments!!.getInt(INITIAL_INDEX) + 1, false)
+            arguments!!.remove(INITIAL_INDEX)
         } else {
             // need to fire selectedPage to render the menu properly
             updateToolbar()
@@ -151,8 +151,8 @@ class DetailFragment : DataBindingFragment<DetailFragmentBinding>() {
         fun create(entryIds: List<Int>, currentIndex: Int): DetailFragment {
             val fragment = DetailFragment()
             fragment.arguments = Bundle()
-            fragment.arguments.putInt(INITIAL_INDEX, currentIndex)
-            fragment.arguments.putIntegerArrayList(INITIAL_ENTRYIDS, ArrayList(entryIds))
+            fragment.arguments!!.putInt(INITIAL_INDEX, currentIndex)
+            fragment.arguments!!.putIntegerArrayList(INITIAL_ENTRYIDS, ArrayList(entryIds))
             return fragment
         }
     }

@@ -31,12 +31,12 @@ class LoginFragment : DataBindingFragment<LoginFragmentBinding>() {
             binding.button.isEnabled = false
             binding.passwordWrapper.error = null
 
-            Feedbin.authenticate(activity, credentials, object : Callback<Void> {
+            Feedbin.authenticate(activity!!, credentials, object : Callback<Void> {
                 override fun onResponse(call: Call<Void>, response: Response<Void>) {
                     if (response.code() == 200) {
                         saveSmartLock(binding.email.text.toString(), binding.password.text.toString())
-                        Settings.saveCredentials(activity, credentials)
-                        fragmentManager.beginTransaction()
+                        Settings.saveCredentials(activity!!, credentials)
+                        fragmentManager!!.beginTransaction()
                                 .replace(R.id.main_content, EntriesFragment())
                                 .commit()
 

@@ -32,7 +32,7 @@ private const val ENTRY_ID = "entry_id"
 class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
     val database: MainDatabase
-        get() = (activity.application as MainApplication).database
+        get() = (activity!!.application as MainApplication).database
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun createBinding(inflater: LayoutInflater, container: ViewGroup?): DetailPageFragmentBinding {
@@ -46,7 +46,7 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         binding.webView.webChromeClient = object : WebChromeClient() {}
         binding.webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                Web.openInBrowser(activity, request.url.toString())
+                Web.openInBrowser(activity!!, request.url.toString())
                 return true
             }
         }
@@ -55,22 +55,22 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
         registerForContextMenu(binding.webView)
 
-        val entry: Entry? = database.entryDao().entryById(arguments.getInt(ENTRY_ID))
+        val entry: Entry? = database.entryDao().entryById(arguments?.getInt(ENTRY_ID) ?: -1)
         val subscription: Subscription? = database.entryDao().subscriptionForFeed(entry?.feedId ?: -1)
 
         if (entry == null) {
             binding.webView.visibility = View.GONE
             binding.fake.visibility = View.GONE
         } else {
-            val content = Mercury(context).contentFor(entry) ?: entry.content
+            val content = Mercury(context!!).contentFor(entry) ?: entry.content
             binding.webView.loadDataWithBaseURL(entry.url, template
                     .replace("{{body}}", safeContent(content) ?: "")
                     .replace("{{title}}", Html.escapeHtml(entry.title ?: ""))
                     .replace("{{link}}", Html.escapeHtml(entry.url ?: ""))
                     .replace("{{author}}", Html.escapeHtml(entry.displayAuthor(subscription)))
-                    .replace("{{background}}", String.format("%08X", ContextCompat.getColor(activity, R.color.background)).substring(2, 8))
-                    .replace("{{textPrimary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_primary)).substring(2, 8))
-                    .replace("{{textSecondary}}", String.format("%08X", ContextCompat.getColor(activity, R.color.text_secondary)).substring(2, 8))
+                    .replace("{{background}}", String.format("%08X", ContextCompat.getColor(activity!!, R.color.background)).substring(2, 8))
+                    .replace("{{textPrimary}}", String.format("%08X", ContextCompat.getColor(activity!!, R.color.text_primary)).substring(2, 8))
+                    .replace("{{textSecondary}}", String.format("%08X", ContextCompat.getColor(activity!!, R.color.text_secondary)).substring(2, 8))
                     .replace("{{date}}", Html.escapeHtml(DateFormat.getDateTimeInstance().format(entry.published ?: Date())))
                     , "text/html", "utf-8", "")
         }
@@ -80,8 +80,8 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
     @Suppress("unused")
     @JavascriptInterface
     fun back() {
-        activity.runOnUiThread {
-            activity.onBackPressed()
+        activity!!.runOnUiThread {
+            activity!!.onBackPressed()
         }
     }
 
@@ -128,13 +128,13 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
 
             // Offer any app that can open the link above the share options
             val openIntent = Intent(Intent.ACTION_VIEW, uri)
-            val resInfo = activity.packageManager.queryIntentActivities(openIntent, 0)
+            val resInfo = activity!!.packageManager.queryIntentActivities(openIntent, 0)
             val extra: MutableList<LabeledIntent> = mutableListOf()
             for (resolveInfo in resInfo) {
                 val packageName = resolveInfo.activityInfo.packageName
                 val intent = Intent(Intent.ACTION_VIEW, uri)
                 intent.component = ComponentName(packageName, resolveInfo.activityInfo.name)
-                val label = resolveInfo.loadLabel(activity.packageManager)
+                val label = resolveInfo.loadLabel(activity!!.packageManager)
                 extra.add(LabeledIntent(intent, packageName, "Open in $label", 0))
             }
             chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, extra.toTypedArray())
@@ -160,7 +160,7 @@ class DetailPageFragment : DataBindingFragment<DetailPageFragmentBinding>() {
         fun create(entryId: Int): DetailPageFragment {
             val fragment = DetailPageFragment()
             fragment.arguments = Bundle()
-            fragment.arguments.putInt(ENTRY_ID, entryId)
+            fragment.arguments?.putInt(ENTRY_ID, entryId)
             return fragment
         }
     }

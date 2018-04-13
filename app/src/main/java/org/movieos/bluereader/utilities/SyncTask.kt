@@ -11,8 +11,8 @@ import org.movieos.bluereader.api.PageLinks
 import org.movieos.bluereader.dao.MainDatabase
 import org.movieos.bluereader.model.Entry
 import org.movieos.bluereader.model.SyncState
-import retrofit2.Response
 import timber.log.Timber
+import java.io.IOException
 import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -139,26 +139,29 @@ class SyncTask private constructor(
         publishProgress("Syncing subscriptions")
         val subscriptions = api.subscriptions().execute()
         database.entryDao().wipeSubscriptions()
-        database.entryDao().updateSubscriptions(subscriptions.body().toTypedArray())
+        database.entryDao().updateSubscriptions(subscriptions.body()!!.toTypedArray())
     }
 
     private fun getTaggings(api: Feedbin) {
         publishProgress("Syncing tags")
-        val taggings = api.taggings().execute()
-        for (tagging in taggings.body()) {
+        val taggings = api.taggings().execute().body()
+                ?: throw IOException("no taggings")
+        for (tagging in taggings) {
             tagging.subscription = database.entryDao().subscriptionForFeed(tagging.feedId)
         }
         database.entryDao().wipeTaggings()
-        database.entryDao().updateTaggings(taggings.body().toTypedArray())
+        database.entryDao().updateTaggings(taggings.toTypedArray())
     }
 
     private fun getEntries(api: Feedbin) {
         // We need these first so we can add new entries in the right state
         publishProgress("Syncing unread state")
         val unread = api.unread().execute().body()
+                ?: throw IOException("no unread")
 
         publishProgress("Syncing starred state")
         val starred = api.starred().execute().body()
+                ?: throw IOException("no starred")
 
         publishProgress("Syncing entries")
         var latestEntry = database.entryDao().latestEntryDate()
@@ -167,17 +170,21 @@ class SyncTask private constructor(
             latestEntry = null
         }
 
-        var entries = api.entries(latestEntry).execute()
+        var entriesResponse = api.entries(latestEntry).execute()
+
         var entryCount = 0
         while (true) {
+            val entries = entriesResponse.body()
+                    ?: throw IOException("no entries")
+
             insertEntries(unread, starred, entries)
 
             // Is there another page?
-            val links = PageLinks(entries.raw())
+            val links = PageLinks(entriesResponse.raw())
             if (links.next == null) break
 
             // Post progress count so the user feels ok about this
-            entryCount += entries.body().size
+            entryCount += entries.size
             if (entryCount >= MAX_ENTRIES_COUNT) {
                 // Ok, we've fetched enough. Probably.
                 break
@@ -185,7 +192,7 @@ class SyncTask private constructor(
             publishProgress(String.format(Locale.getDefault(), "Syncing entries (%d)", entryCount))
 
             // Fetch next page and loop again
-            entries = api.entriesPaginate(links.next!!).execute()
+            entriesResponse = api.entriesPaginate(links.next!!).execute()
         }
 
         // Now we need to update everything in the database - the server doesn't return entries
@@ -223,20 +230,21 @@ class SyncTask private constructor(
             publishProgress("Backfilling " + missing.size + " entries")
             val page = missing.sliceSafely(0, CATCHUP_SIZE)
             missing = missing.sliceSafely(CATCHUP_SIZE, missing.size)
-            val missingEntries = api.entries(page).execute()
+            val missingEntries = api.entries(page).execute().body()
+                    ?: throw IOException("no entries")
             insertEntries(unread, starred, missingEntries)
         }
 
     }
 
-    private fun insertEntries(unread: List<Int>, starred: List<Int>, response: Response<List<Entry>>) {
-        for (entry in response.body()) {
+    private fun insertEntries(unread: List<Int>, starred: List<Int>, response: List<Entry>) {
+        for (entry in response) {
             // Set the right read/unread state
             entry.starred = starred.contains(entry.id)
             entry.unread = unread.contains(entry.id)
         }
         // Insert all entries at once
-        database.entryDao().updateEntries(response.body().toTypedArray())
+        database.entryDao().updateEntries(response.toTypedArray())
     }
 
     class SyncStatus {
