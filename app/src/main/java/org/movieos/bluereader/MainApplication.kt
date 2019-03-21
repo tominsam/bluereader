@@ -3,7 +3,6 @@ package org.movieos.bluereader
 import android.arch.persistence.room.Room
 import android.util.Log
 import android.webkit.WebView
-import com.crashlytics.android.Crashlytics
 import org.greenrobot.eventbus.EventBus
 import org.movieos.bluereader.dao.MainDatabase
 import timber.log.Timber
@@ -31,12 +30,6 @@ class MainApplication : android.app.Application() {
                 override fun log(priority: Int, tag: String?, message: String?, throwable: Throwable?) {
                     if (priority == Log.VERBOSE || priority == Log.DEBUG || priority == Log.INFO) {
                         return
-                    }
-                    if (message != null) {
-                        Crashlytics.log("$tag - $message")
-                    }
-                    if (throwable != null) {
-                        Crashlytics.logException(throwable)
                     }
                 }
             })

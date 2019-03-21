@@ -221,10 +221,10 @@ class SyncTask private constructor(
         // into the past - we want those lists to be complete no matter how far back we need
         // to go
         publishProgress("Backfilling")
-        var missing: List<Int> = listOf()
-        missing += unread.filter { database.entryDao().entryById(it) == null }
-        missing += starred.filter { database.entryDao().entryById(it) == null }
-        missing = missing.distinct()
+        var missing: List<Int> = (
+                unread.filter { database.entryDao().entryById(it) == null }
+                        + starred.filter { database.entryDao().entryById(it) == null }
+                ).distinct()
 
         while (!missing.isEmpty()) {
             publishProgress("Backfilling " + missing.size + " entries")
